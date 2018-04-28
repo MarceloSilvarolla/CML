@@ -4,7 +4,7 @@
 %token IDENTIFIER INT_CONSTANT REAL_CONSTANT BOOL_CONSTANT STRING_LITERAL
 %token OR_OP AND_OP EQ_OP NE_OP LE_OP GE_OP
 %token IF ELSE WHILE
-%token INT REAL CHAR BOOL STRING DATASET MODEL
+%token VOID INT REAL CHAR BOOL STRING DATASET MODEL
 
 %start translation_unit
 
@@ -14,9 +14,6 @@
 /* 1. Expressões */
 
 /* TODO: acrescentar operador unário ! e a operação sobre datasets (tipo d[2:5]) */
-/* TODO: preencher regras de “declaration” e “function_definition” */
-/* TODO: comentários */
-/* TODO: expressões da forma {e_1, …, e_n} para definir vetores */
 
 /* 1.1 Expressões “atômicas”:
     Expressões que não causam ambiguidades quando dentro de uma expressão maior, mesmo quando a precedência das operações não é conhecida
@@ -26,6 +23,7 @@ primary_expression
     : IDENTIFIER
     | constant
     | string
+    | array
     | '(' expression ')'
     ;
 
@@ -37,6 +35,16 @@ constant
 
 string
     : STRING_LITERAL
+    ;
+
+array
+    : '{' '}'
+    | '{' expression_list '}'
+    ;
+
+expression_list
+    : expression
+    | expression_list ',' expression
     ;
 
 /* 1.2 Expressões “não-atômicas” */
@@ -127,8 +135,7 @@ block_item
     ;
 
 expression_statement
-    : ';'
-    | expression ';'
+    : expression ';'
     ;
 
 selection_statement
@@ -141,16 +148,32 @@ iteration_statement
     ;
 
 /* 3. Declarações */
+
 declaration
-    : declaration_specifiers init_declarator_list ';'
+    : type_specifier IDENTIFIER
+    | type_specifier IDENTIFIER '=' expression ';'
+    | type_specifier IDENTIFIER '(' ')' ';'
+    | type_specifier IDENTIFIER '(' parameter_declaration_list ')' ';'
     ;
 
-declaration_specifiers
-    : type_specifier declaration_specifiers
+parameter_declaration_list
+    : parameter_declaration
+    | parameter_declaration_list ',' parameter_declaration
     ;
 
-init_declarator_list
-    : 
+parameter_declaration
+    : type_specifier IDENTIFIER
+    ;
+
+
+type_specifier
+    : VOID
+    | CHAR
+    | INT
+    | REAL
+    | BOOL
+    | type_specifier '[' ']'
+    ;
 
 
 /* 4. Unidade de tradução */
@@ -164,14 +187,19 @@ external_declaration
     | declaration
     ;
 
-/*function_defintion
-    :
-*/ 
-
-declaration_list
-    : declaration
-    | declaration_list declaration
+function_definition
+    : type_specifier IDENTIFIER '(' parameter_declaration_list ')' compound_statement
     ;
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,19 +1,19 @@
 # Calculadora em notacao polonesa reversa (posfixa)  
 
-calcpr: calcpr.yy.o calcpr.tab.o 
-	gcc calcpr.yy.o calcpr.tab.o -o calcpr -lfl -lm
+CML: CML.yy.o y.tab.o 
+	gcc CML.yy.o y.tab.o -o CML -lfl
 
-calcpr.yy.o: calcpr.yy.c calcpr.tab.c
-	gcc -c calcpr.yy.c
+CML.yy.o: CML.yy.c y.tab.c
+	gcc -c CML.yy.c
 
-calcpr.tab.o: calcpr.tab.c
-	gcc -c calcpr.tab.c
+y.tab.o: y.tab.c
+	gcc -c y.tab.c
 
-calcpr.yy.c: calcpr.l calcpr.tab.h
-	flex -o calcpr.yy.c calcpr.l
+CML.yy.c: CML.l y.tab.h
+	flex -o CML.yy.c CML.l
 
-calcpr.tab.c calcpr.tab.h: calcpr.y
-	bison --defines=calcpr.tab.h -o calcpr.tab.c calcpr.y
+y.tab.c y.tab.h: CML.y
+	bison --defines=y.tab.h -o y.tab.c CML.y
 
 clean:
-	rm *.o *.c *.h calcpr
+	rm *.o *.c *.h CML
