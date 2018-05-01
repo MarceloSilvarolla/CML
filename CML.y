@@ -19,6 +19,11 @@
     Expressões que não causam ambiguidades quando dentro de uma expressão maior, mesmo quando a precedência das operações não é conhecida
     Estas expressões podem, portanto, ser pensadas como identificadores, constantes ou literais. */
 
+/* LEO:   Não está faltando acesso a array: IDENTIFIER '[' expression ']' ?
+    Da forma como está, acesso a array só pode acontecer através de 'expression',
+    mas acho que também cai no caso de ser uma expressão primária.
+ */
+
 primary_expression
     : IDENTIFIER
     | constant
@@ -49,6 +54,8 @@ expression_list
 
 /* 1.2 Expressões “não-atômicas” */
 
+/* LEO:   Podemos remover 'assignment_expression', e utilizar apenas 'expression' */
+
 expression
     : assignment_expression
     ;
@@ -72,6 +79,12 @@ logical_and_expression
     : equality_expression
     | logical_and_expression AND_OP equality_expression
     ;
+
+/* LEO:   Posso estar errado, mas isto vai acabar permitindo coisas do tipo:
+      E == E == E
+   Eu sei que em C isto é possível (e tem um resultado diferente do intuitivo),
+   Mas não lembro de termos discutido isto. Então, vamos deixar?
+*/
 
 equality_expression
     : relational_expression
@@ -98,6 +111,11 @@ multiplicative_expression
     | multiplicative_expression '*' postfix_expression
     | multiplicative_expression '/' postfix_expression
     ;
+
+/* LEO:   Não deveria ser prefix_expression?
+   Me corrijam se estiver viajando, mas o 'pre' não é quando o 'operando',
+   no caso aqui é o nome da função/vetor vem antes?
+ */
 
 postfix_expression
     : primary_expression
@@ -134,6 +152,8 @@ block_item
     | statement
     ;
 
+/* LEO:   Podemos remover este também? Ou ele é útil para mantermos uniforme o 'statment' acima? */
+
 expression_statement
     : expression ';'
     ;
@@ -148,6 +168,8 @@ iteration_statement
     ;
 
 /* 3. Declarações */
+
+/* LEO:   Falta o ';' na primeira produção */
 
 declaration
     : type_specifier IDENTIFIER
@@ -190,16 +212,3 @@ external_declaration
 function_definition
     : type_specifier IDENTIFIER '(' parameter_declaration_list ')' compound_statement
     ;
-
-
-
-
-
-
-
-
-
-
-
-
-
