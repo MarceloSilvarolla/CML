@@ -15,14 +15,9 @@
 
 /* TODO: acrescentar operador unário ! e a operação sobre datasets (tipo d[2:5]) */
 
-/* 1.1 Expressões “atômicas”:
+/* 1.1 Expressões necessariamente “atômicas”:
     Expressões que não causam ambiguidades quando dentro de uma expressão maior, mesmo quando a precedência das operações não é conhecida
     Estas expressões podem, portanto, ser pensadas como identificadores, constantes ou literais. */
-
-/* LEO:   Não está faltando acesso a array: IDENTIFIER '[' expression ']' ?
-    Da forma como está, acesso a array só pode acontecer através de 'expression',
-    mas acho que também cai no caso de ser uma expressão primária.
- */
 
 primary_expression
     : IDENTIFIER
@@ -54,15 +49,9 @@ expression_list
 
 /* 1.2 Expressões “não-atômicas” */
 
-/* LEO:   Podemos remover 'assignment_expression', e utilizar apenas 'expression' */
-
 expression
-    : assignment_expression
-    ;
-
-assignment_expression
     : logical_or_expression
-    | array_expression '=' assignment_expression
+    | array_expression '=' expression
     ;
 
 array_expression
@@ -107,21 +96,16 @@ additive_expression
     ;
 
 multiplicative_expression
-    : postfix_expression
-    | multiplicative_expression '*' postfix_expression
-    | multiplicative_expression '/' postfix_expression
+    : prefix_expression
+    | multiplicative_expression '*' prefix_expression
+    | multiplicative_expression '/' prefix_expression
     ;
 
-/* LEO:   Não deveria ser prefix_expression?
-   Me corrijam se estiver viajando, mas o 'pre' não é quando o 'operando',
-   no caso aqui é o nome da função/vetor vem antes?
- */
-
-postfix_expression
+prefix_expression
     : primary_expression
-    | postfix_expression '[' expression ']'
-    | postfix_expression '(' ')'
-    | postfix_expression '(' argument_expression_list ')'
+    | prefix_expression '[' expression ']'
+    | prefix_expression '(' ')'
+    | prefix_expression '(' argument_expression_list ')'
     ;
 
 argument_expression_list
@@ -152,8 +136,6 @@ block_item
     | statement
     ;
 
-/* LEO:   Podemos remover este também? Ou ele é útil para mantermos uniforme o 'statment' acima? */
-
 expression_statement
     : expression ';'
     ;
@@ -169,10 +151,8 @@ iteration_statement
 
 /* 3. Declarações */
 
-/* LEO:   Falta o ';' na primeira produção */
-
 declaration
-    : type_specifier IDENTIFIER
+    : type_specifier IDENTIFIER ';'
     | type_specifier IDENTIFIER '=' expression ';'
     | type_specifier IDENTIFIER '(' ')' ';'
     | type_specifier IDENTIFIER '(' parameter_declaration_list ')' ';'
