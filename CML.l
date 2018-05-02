@@ -13,7 +13,7 @@ WS  [ \t\n]
 
 %{
 #include <stdio.h>
-#include <y.tab.h>
+#include "y.tab.h"
 
 extern void yyerror(const char *);  /* prints grammar violation message */
 
@@ -28,23 +28,24 @@ static int check_type(void);
 %%
 
 "/*"                                    { comment(); }
-"//".*                                   { /* consume //-comment */ }
+"//".*                                  { /* consume //-comment */ }
 "char"					{ return(CHAR); }
 "else"					{ return(ELSE); }
-“real”					{ return(REAL); }
-“bool”					{ return(BOOL); }
-“string”				{ return(STRING); }
-“dataset”				{ return(DATASET); }
-“model”					{ return(MODEL); }
+"real"					{ return(REAL); }
+"bool"					{ return(BOOL); }
+"string"				{ return(STRING); }
+"dataset"				{ return(DATASET); }
+"model"					{ return(MODEL); }
 "if"					{ return(IF); }
 "int"					{ return(INT); }
 "return"				{ return(RETURN); }
 "void"					{ return(VOID); }
 "while"					{ return(WHILE); }
-{L}{A}*					{ return check_type(); }
-{D}+					{ return I_CONSTANT; }
-{D}*”.”{D}+				{return REAL_CONSTANT; }
-{D}+”.”					{ return REAL_CONSTANT; }
+"skip"          { return(SKIP); }
+{L}{A}*					{ return (IDENTIFIER); }
+{D}+					{ return INT_CONSTANT; }
+{D}*"."{D}+				{ return REAL_CONSTANT; }
+{D}+"."					{ return REAL_CONSTANT; }
 \"([^"\\\n]|{ES})*\"			{ return STRING_LITERAL; }
 "&&"					{ return AND_OP; }
 "||"					{ return OR_OP; }
@@ -71,9 +72,28 @@ static int check_type(void);
 {WS}+					{ /* whitespace separates tokens */ }
 .					{ /* discard bad characters */ }
 
+%%
 
+int yywrap(void)        /* called at end of input */
+{
+    return 1;           /* terminate now */
+}
 
+static void comment(void)
+{
+    int c;
 
+    while ((c = input()) != 0)
+        if (c == '*')
+        {
+            while ((c = input()) == '*')
+                ;
 
+            if (c == '/')
+                return;
 
-
+            if (c == 0)
+                break;
+        }
+    yyerror("unterminated comment");
+}

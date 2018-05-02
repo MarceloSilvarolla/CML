@@ -1,9 +1,13 @@
+%{
+int yylex();
+void yyerror(const char *s);
+%}
 /* Baseado em http://www.quut.com/c/ANSI-C-grammar-y.html */
 /* https://docs.google.com/document/d/1ICumehrbqgM_OBzdH0uYGFk2DyQDmpr00JclKpi8acY/edit?usp=sharing */
 
 %token IDENTIFIER INT_CONSTANT REAL_CONSTANT BOOL_CONSTANT STRING_LITERAL
 %token OR_OP AND_OP EQ_OP NE_OP LE_OP GE_OP
-%token IF ELSE WHILE
+%token IF ELSE WHILE RETURN SKIP
 %token VOID INT REAL CHAR BOOL STRING DATASET MODEL
 
 %start translation_unit
@@ -13,7 +17,8 @@
 
 /* 1. Expressões */
 
-/* TODO: acrescentar operador unário ! e a operação sobre datasets (tipo d[2:5]) */
+/* TODO: a operação sobre datasets (tipo d[2:5]) */
+/* TODO: especificar o nome de todas as funções predefinidas */
 
 /* 1.1 Expressões necessariamente “atômicas”:
     Expressões que não causam ambiguidades quando dentro de uma expressão maior, mesmo quando a precedência das operações não é conhecida
@@ -51,11 +56,12 @@ expression_list
 
 expression
     : logical_or_expression
+    | IDENTIFIER '=' expression
     | array_expression '=' expression
     ;
 
 array_expression
-    : IDENTIFIER
+    : IDENTIFIER '[' expression ']'
     | array_expression '[' expression ']'
     ;
 
@@ -106,6 +112,7 @@ prefix_expression
     | prefix_expression '[' expression ']'
     | prefix_expression '(' ')'
     | prefix_expression '(' argument_expression_list ')'
+    | '!' prefix_expression
     ;
 
 argument_expression_list
@@ -119,10 +126,11 @@ statement
     | expression_statement
     | selection_statement
     | iteration_statement
+    | jump_statement
     ;
 
 compound_statement
-    : '{' '}'
+    : '{' SKIP ';' '}'
     | '{' block_item_list '}'
     ;
 
@@ -147,6 +155,11 @@ selection_statement
 
 iteration_statement
     : WHILE '(' expression ')' statement
+    ;
+
+jump_statement
+    : RETURN ';'
+    | RETURN expression ';'
     ;
 
 /* 3. Declarações */
@@ -174,6 +187,9 @@ type_specifier
     | INT
     | REAL
     | BOOL
+    | STRING
+    | DATASET
+    | MODEL
     | type_specifier '[' ']'
     ;
 
@@ -190,5 +206,21 @@ external_declaration
     ;
 
 function_definition
-    : type_specifier IDENTIFIER '(' parameter_declaration_list ')' compound_statement
+    : type_specifier IDENTIFIER '(' ')' compound_statement
+    | type_specifier IDENTIFIER '(' parameter_declaration_list ')' compound_statement
     ;
+
+%%
+#include <stdio.h>
+
+void yyerror(const char *s)
+{
+	fflush(stdout);
+	fprintf(stderr, "*** %s\n", s);
+}
+
+
+void main(void) {
+   printf("CML\n");
+   yyparse();
+}

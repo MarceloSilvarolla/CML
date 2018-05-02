@@ -1,0 +1,28 @@
+int main(int argc, char[] argv){
+  {int a = {};}
+
+  if(a){
+    b = {};
+  } else {
+    real f = 3.3;
+  }
+
+  while(000){
+    skip;
+  }
+
+  return 9;
+}
+
+real func1(int arg){
+  skip;
+}
+
+void funk(){
+  return 1;
+}
+
+void a = 1 < 2 < 3;
+
+dataset x = {4, 5};
+model a = 56789.56789;
