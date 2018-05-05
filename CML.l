@@ -43,9 +43,10 @@ static int check_type(void);
 "while"					{ return(WHILE); }
 "skip"          { return(SKIP); }
 {L}{A}*					{ return (IDENTIFIER); }
-{D}+					{ return INT_CONSTANT; }
-{D}*"."{D}+				{ return REAL_CONSTANT; }
-{D}+"."					{ return REAL_CONSTANT; }
+{D}+					{ return INT_LITERAL; }
+{D}*"."{D}+				{ return REAL_LITERAL; }
+{D}+"."					{ return REAL_LITERAL; }
+\'([^'\\\n]|{ES})\'			{ return CHAR_LITERAL; }
 \"([^"\\\n]|{ES})*\"			{ return STRING_LITERAL; }
 "&&"					{ return AND_OP; }
 "||"					{ return OR_OP; }

@@ -5,7 +5,7 @@ void yyerror(const char *s);
 /* Baseado em http://www.quut.com/c/ANSI-C-grammar-y.html */
 /* https://docs.google.com/document/d/1ICumehrbqgM_OBzdH0uYGFk2DyQDmpr00JclKpi8acY/edit?usp=sharing */
 
-%token IDENTIFIER INT_CONSTANT REAL_CONSTANT BOOL_CONSTANT STRING_LITERAL
+%token IDENTIFIER INT_LITERAL REAL_LITERAL BOOL_LITERAL CHAR_LITERAL STRING_LITERAL
 %token OR_OP AND_OP EQ_OP NE_OP LE_OP GE_OP
 %token IF ELSE WHILE RETURN SKIP
 %token VOID INT REAL CHAR BOOL STRING DATASET MODEL
@@ -18,7 +18,7 @@ void yyerror(const char *s);
 /* 1. Expressões */
 
 /* TODO: a operação sobre datasets (tipo d[2:5]) */
-/* TODO: especificar o nome de todas as funções predefinidas */
+/* TODO: - unario */
 
 /* 1.1 Expressões necessariamente “atômicas”:
     Expressões que não causam ambiguidades quando dentro de uma expressão maior, mesmo quando a precedência das operações não é conhecida
@@ -26,20 +26,17 @@ void yyerror(const char *s);
 
 primary_expression
     : IDENTIFIER
-    | constant
-    | string
+    | literal
     | array
     | '(' expression ')'
     ;
 
-constant
-    : INT_CONSTANT
-    | REAL_CONSTANT
-    | BOOL_CONSTANT
-    ;
-
-string
-    : STRING_LITERAL
+literal
+    : INT_LITERAL
+    | REAL_LITERAL
+    | BOOL_LITERAL
+    | CHAR_LITERAL
+    | STRING_LITERAL
     ;
 
 array
