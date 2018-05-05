@@ -77,5 +77,16 @@ P[[prog e_dec]] sig = P[[e_dec]] (P[[prog]] sig)
 
 E[[IDENTIFIER]] sig = if val = undefined then error
                        where val = getIdentifierValue(sig, IDENTIFIER)
-E[[literal
+E[[INT_LITERAL]] sig = value(INT_LITERAL)
+...
+E[[STRING_LITERAL]] sig = value(STRING_LITERAL)
+E[[{}]] sig = \emptyset
+E[[{e}]] sig = array(E[[e]] sig)
+value é uma função auxiliar que extrai o valor de um literal. Por exemplo,
+value(101) = 101
+value(true) = true
+value(5.2) = 5,2
+value("Maria") = "Maria"
+
+
 
