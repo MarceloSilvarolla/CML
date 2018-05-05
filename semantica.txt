@@ -11,15 +11,15 @@ Program = conjunto de todas as sequências finitas de terminais deriváveis a pa
 Expressões:
 a := "{" "}" | "{" seq_e "}"
 seq_e := e | seq_e "," e
-ae := IDENTIFIER | ae "[" e "]" 
+ae := IDENTIFIER | ae "[" e "]"
 e := IDENTIFIER | literal | a | e "||" e | ae "=" e | e "&&" e | e "==" e | e "!=" e |
      e "<" e | e "<=" e | e ">" e | e ">=" e | "-" e | e "+" e | e "-" e | e "*" e | e "/" e | "(" e ")" |
-     e "[" e "]" | e "(" ")" | e "(" seq_e ")" | "!" e 
+     e "[" e "]" | e "(" ")" | e "(" seq_e ")" | "!" e
 Comandos (s de statement, mudar para comando):
 s := c_s | e_s | s_s | i_s | j_s
 c_s := "{" SKIP ";" "}" | "{" seq_b_i "}"
 e_s := e ";"
-s_s := IF "(" e ")" c_s ELSE c_s | IF "(" e ")" c_s 
+s_s := IF "(" e ")" c_s ELSE c_s | IF "(" e ")" c_s
 i_s := WHILE "(" e ")" s
 j_s := RETURN ";" | RETURN e ";"
 
@@ -72,10 +72,10 @@ P:Program --> (Sigma --> Sigma )
 
 ===Equações semânticas:
 P[[dec]] sig = Dec[[dec]] sig
-P[[f_def]] sig = Def[[f_def]] 
+P[[f_def]] sig = Def[[f_def]]
 P[[prog e_dec]] sig = P[[e_dec]] (P[[prog]] sig)
 
-E[[IDENTIFIER]] sig = if val = undefined then error
+E[[IDENTIFIER]] sig = if val = undefined then error else val
                        where val = getIdentifierValue(sig, IDENTIFIER)
 E[[INT_LITERAL]] sig = value(INT_LITERAL)
 ...
@@ -88,5 +88,7 @@ value(true) = true
 value(5.2) = 5,2
 value("Maria") = "Maria"
 
-
-
+E[[e_1 + e_2]] sig = int(m + n) where int(m) = E[[e_1]] sig and int(n) = E[[e_2]] sig
+                   = real(m + n) where int(m) = E[[e_1]] sig and real(n) = E[[e_2]] sig
+                   = real(m + n) where real(m) = E[[e_1]] sig and int(n) = E[[e_2]] sig
+                   = real(m + n) where real(m) = E[[e_1]] sig and real(n) = E[[e_2]] sig
