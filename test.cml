@@ -22,7 +22,7 @@ void funk(){
   return 1;
 }
 
-void a = 1 < 2 < 3;
+void a =  2 < 3;
 
 dataset x = {4, 5};
 model a = 56789.56789;

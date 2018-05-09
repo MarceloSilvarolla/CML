@@ -41,7 +41,6 @@ static int check_type(void);
 "return"				{ return(RETURN); }
 "void"					{ return(VOID); }
 "while"					{ return(WHILE); }
-"skip"  			        { return(SKIP); }
 {L}{A}*					{ return (IDENTIFIER); }
 {D}+					{ return INT_LITERAL; }
 {D}*"."{D}+				{ return REAL_LITERAL; }

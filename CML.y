@@ -22,14 +22,18 @@ void yyerror(const char *s);
 
 /* 1.1 Expressões necessariamente “atômicas”:
     Expressões que não causam ambiguidades quando dentro de uma expressão maior, mesmo quando a precedência das operações não é conhecida
-    Estas expressões podem, portanto, ser pensadas como identificadores, constantes ou literais. */
+    Estas expressões podem, portanto, ser pensadas como identificadores ou literais. */
 
 primary_expression
     : IDENTIFIER
     | literal
     | array
     | '(' expression ')'
+    | array_expression
+    | primary_expression '(' ')'
+    | primary_expression '(' expression_list ')'
     ;
+
 
 literal
     : INT_LITERAL
@@ -68,28 +72,18 @@ logical_or_expression
     ;
 
 logical_and_expression
-    : equality_expression
-    | logical_and_expression AND_OP equality_expression
-    ;
-
-/* LEO:   Posso estar errado, mas isto vai acabar permitindo coisas do tipo:
-      E == E == E
-   Eu sei que em C isto é possível (e tem um resultado diferente do intuitivo),
-   Mas não lembro de termos discutido isto. Então, vamos deixar?
-*/
-
-equality_expression
     : relational_expression
-    | equality_expression EQ_OP relational_expression
-    | equality_expression NE_OP relational_expression
+    | logical_and_expression AND_OP relational_expression
     ;
 
 relational_expression
     : additive_expression
-    | relational_expression '<' additive_expression
-    | relational_expression '>' additive_expression
-    | relational_expression LE_OP additive_expression
-    | relational_expression GE_OP additive_expression
+    | additive_expression '<' additive_expression
+    | additive_expression '>' additive_expression
+    | additive_expression LE_OP additive_expression
+    | additive_expression GE_OP additive_expression
+    | additive_expression EQ_OP additive_expression
+    | additive_expression NE_OP additive_expression
     ;
 
 additive_expression
@@ -99,22 +93,14 @@ additive_expression
     ;
 
 multiplicative_expression
-    : prefix_expression
-    | multiplicative_expression '*' prefix_expression
-    | multiplicative_expression '/' prefix_expression
+    : neg_expression
+    | multiplicative_expression '*' neg_expression
+    | multiplicative_expression '/' neg_expression
     ;
 
-prefix_expression
+neg_expression
     : primary_expression
-    | prefix_expression '[' expression ']'
-    | prefix_expression '(' ')'
-    | prefix_expression '(' argument_expression_list ')'
-    | '!' prefix_expression
-    ;
-
-argument_expression_list
-    : expression
-    | argument_expression_list ',' expression
+    | '!' neg_expression
     ;
 
 /* 2. Comandos */
@@ -142,7 +128,8 @@ block_item
     ;
 
 expression_statement
-    : expression ';'
+    : ';'
+    | expression ';'
     ;
 
 selection_statement
