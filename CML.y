@@ -111,11 +111,11 @@ command
     | selection_command
     | iteration_command
     | jump_command
+    | SKIP ';'
     ;
 
 compound_command
-    : '{' SKIP ';' '}'
-    | '{' declaration_or_command_list '}'
+    : '{' declaration_or_command_list '}'
     ;
 
 declaration_or_command_list 
