@@ -1,6 +1,7 @@
 int main(int argc, char[] argv){
   {int a = {};}
 
+  !(0 < -a * -b + -(d * 5));
   if(a){
     b = {};
   } else {
@@ -23,6 +24,6 @@ void funk(){
 }
 
 void a =  2 < 3;
-
+bool b = true;
 dataset x = {4, 5};
 model a = 56789.56789;

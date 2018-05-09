@@ -18,7 +18,6 @@ void yyerror(const char *s);
 /* 1. Expressões */
 
 /* TODO: a operação sobre datasets (tipo d[2:5]) */
-/* TODO: - unario */
 
 /* 1.1 Expressões necessariamente “atômicas”:
     Expressões que não causam ambiguidades quando dentro de uma expressão maior, mesmo quando a precedência das operações não é conhecida
@@ -29,7 +28,7 @@ primary_expression
     | literal
     | array
     | '(' expression ')'
-    | array_expression
+    | array_access
     | primary_expression '(' ')'
     | primary_expression '(' expression_list ')'
     ;
@@ -48,22 +47,22 @@ array
     | '{' expression_list '}'
     ;
 
+
+/* 1.2 Expressões “não-atômicas” */
 expression_list
     : expression
     | expression_list ',' expression
     ;
 
-/* 1.2 Expressões “não-atômicas” */
-
 expression
     : logical_or_expression
     | IDENTIFIER '=' expression
-    | array_expression '=' expression
+    | array_access '=' expression
     ;
 
-array_expression
+array_access
     : IDENTIFIER '[' expression ']'
-    | array_expression '[' expression ']'
+    | array_access '[' expression ']'
     ;
 
 logical_or_expression
@@ -93,15 +92,21 @@ additive_expression
     ;
 
 multiplicative_expression
+    : unary_minus_expression
+    | multiplicative_expression '*' unary_minus_expression
+    | multiplicative_expression '/' unary_minus_expression
+    ;
+
+unary_minus_expression
     : neg_expression
-    | multiplicative_expression '*' neg_expression
-    | multiplicative_expression '/' neg_expression
+    | '-' neg_expression
     ;
 
 neg_expression
     : primary_expression
     | '!' neg_expression
     ;
+
 
 /* 2. Comandos */
 statement
