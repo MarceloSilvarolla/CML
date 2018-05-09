@@ -8,7 +8,7 @@
 D   [0-9]
 L   [a-zA-Z_]
 A   [a-zA-Z_0-9]
-ES  \\['"\?\\nt]
+ES  \\['"\\nt]
 WS  [ \t\n]
 
 %{
@@ -41,7 +41,7 @@ static int check_type(void);
 "return"				{ return(RETURN); }
 "void"					{ return(VOID); }
 "while"					{ return(WHILE); }
-"skip"          { return(SKIP); }
+"skip"  			        { return(SKIP); }
 {L}{A}*					{ return (IDENTIFIER); }
 {D}+					{ return INT_LITERAL; }
 {D}*"."{D}+				{ return REAL_LITERAL; }
