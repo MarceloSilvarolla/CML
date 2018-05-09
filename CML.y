@@ -10,7 +10,7 @@ void yyerror(const char *s);
 %token IF ELSE WHILE RETURN SKIP
 %token VOID INT REAL CHAR BOOL STRING DATASET MODEL
 
-%start translation_unit
+%start program
 
 %%
 
@@ -19,14 +19,15 @@ void yyerror(const char *s);
 
 /* TODO: a operação sobre datasets (tipo d[2:5]) */
 
-/* 1.1 Expressões necessariamente “atômicas”:
+/* 1.1 Expressões necessariamente "atômicas":
     Expressões que não causam ambiguidades quando dentro de uma expressão maior, mesmo quando a precedência das operações não é conhecida
     Estas expressões podem, portanto, ser pensadas como identificadores ou literais. */
 
 primary_expression
     : IDENTIFIER
     | literal
-    | array
+    | '{' '}'
+    | '{' expression_list '}'
     | '(' expression ')'
     | array_access
     | primary_expression '(' ')'
@@ -42,13 +43,8 @@ literal
     | STRING_LITERAL
     ;
 
-array
-    : '{' '}'
-    | '{' expression_list '}'
-    ;
 
-
-/* 1.2 Expressões “não-atômicas” */
+/* 1.2 Expressões "não-atômicas" */
 expression_list
     : expression
     | expression_list ',' expression
@@ -183,13 +179,13 @@ type_specifier
     ;
 
 
-/* 4. Unidade de tradução */
-translation_unit
-    : external_declaration
-    | translation_unit external_declaration
+/* 4. Programa */
+program
+    : declaration_or_function_definition
+    | program declaration_or_function_definition
     ;
 
-external_declaration
+declaration_or_function_definition
     : function_definition
     | declaration
     ;

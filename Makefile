@@ -14,4 +14,4 @@ y.tab.c y.tab.h: CML.y
 	bison -v --defines=y.tab.h -o y.tab.c CML.y
 
 clean:
-	rm *.o *.c *.h CML
+	rm *.o *.c *.h CML *'~'
