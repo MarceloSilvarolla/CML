@@ -109,44 +109,44 @@ neg_expression
 
 
 /* 2. Comandos */
-statement
-    : compound_statement
-    | expression_statement
-    | selection_statement
-    | iteration_statement
-    | jump_statement
+command
+    : compound_command
+    | expression_command
+    | selection_command
+    | iteration_command
+    | jump_command
     ;
 
-compound_statement
+compound_command
     : '{' SKIP ';' '}'
-    | '{' block_item_list '}'
+    | '{' declaration_or_command_list '}'
     ;
 
-block_item_list
-    : block_item
-    | block_item_list block_item
+declaration_or_command_list 
+    : declaration_or_command
+    | declaration_or_command_list declaration_or_command
     ;
 
-block_item
+declaration_or_command
     : declaration
-    | statement
+    | command
     ;
 
-expression_statement
+expression_command
     : ';'
     | expression ';'
     ;
 
-selection_statement
-    : IF '(' expression ')' compound_statement ELSE compound_statement
-    | IF '(' expression ')' compound_statement
+selection_command
+    : IF '(' expression ')' compound_command ELSE compound_command
+    | IF '(' expression ')' compound_command
     ;
 
-iteration_statement
-    : WHILE '(' expression ')' statement
+iteration_command
+    : WHILE '(' expression ')' command
     ;
 
-jump_statement
+jump_command
     : RETURN ';'
     | RETURN expression ';'
     ;
@@ -195,8 +195,8 @@ external_declaration
     ;
 
 function_definition
-    : type_specifier IDENTIFIER '(' ')' compound_statement
-    | type_specifier IDENTIFIER '(' parameter_declaration_list ')' compound_statement
+    : type_specifier IDENTIFIER '(' ')' compound_command
+    | type_specifier IDENTIFIER '(' parameter_declaration_list ')' compound_command
     ;
 
 %%
