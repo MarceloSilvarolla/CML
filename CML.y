@@ -30,8 +30,8 @@ primary_expression
     | '{' expression_list '}'
     | '(' expression ')'
     | array_access
-    | primary_expression '(' ')'
-    | primary_expression '(' expression_list ')'
+    | IDENTIFIER '(' ')'
+    | IDENTIFIER '(' expression_list ')'
     ;
 
 
