@@ -10,7 +10,7 @@ void yyerror(const char *s);
 %token IF ELSE WHILE RETURN SKIP
 %token VOID INT REAL CHAR BOOL STRING DATASET MODEL
 
-%start translation_unit
+%start program
 
 %%
 
@@ -18,18 +18,22 @@ void yyerror(const char *s);
 /* 1. Expressões */
 
 /* TODO: a operação sobre datasets (tipo d[2:5]) */
-/* TODO: - unario */
 
-/* 1.1 Expressões necessariamente “atômicas”:
+/* 1.1 Expressões necessariamente "atômicas":
     Expressões que não causam ambiguidades quando dentro de uma expressão maior, mesmo quando a precedência das operações não é conhecida
-    Estas expressões podem, portanto, ser pensadas como identificadores, constantes ou literais. */
+    Estas expressões podem, portanto, ser pensadas como identificadores ou literais. */
 
 primary_expression
     : IDENTIFIER
     | literal
-    | array
+    | '{' '}'
+    | '{' expression_list '}'
     | '(' expression ')'
+    | array_access
+    | IDENTIFIER '(' ')'
+    | IDENTIFIER '(' expression_list ')'
     ;
+
 
 literal
     : INT_LITERAL
@@ -39,27 +43,22 @@ literal
     | STRING_LITERAL
     ;
 
-array
-    : '{' '}'
-    | '{' expression_list '}'
-    ;
 
+/* 1.2 Expressões "não-atômicas" */
 expression_list
     : expression
     | expression_list ',' expression
     ;
 
-/* 1.2 Expressões “não-atômicas” */
-
 expression
     : logical_or_expression
     | IDENTIFIER '=' expression
-    | array_expression '=' expression
+    | array_access '=' expression
     ;
 
-array_expression
+array_access
     : IDENTIFIER '[' expression ']'
-    | array_expression '[' expression ']'
+    | array_access '[' expression ']'
     ;
 
 logical_or_expression
@@ -68,28 +67,18 @@ logical_or_expression
     ;
 
 logical_and_expression
-    : equality_expression
-    | logical_and_expression AND_OP equality_expression
-    ;
-
-/* LEO:   Posso estar errado, mas isto vai acabar permitindo coisas do tipo:
-      E == E == E
-   Eu sei que em C isto é possível (e tem um resultado diferente do intuitivo),
-   Mas não lembro de termos discutido isto. Então, vamos deixar?
-*/
-
-equality_expression
     : relational_expression
-    | equality_expression EQ_OP relational_expression
-    | equality_expression NE_OP relational_expression
+    | logical_and_expression AND_OP relational_expression
     ;
 
 relational_expression
     : additive_expression
-    | relational_expression '<' additive_expression
-    | relational_expression '>' additive_expression
-    | relational_expression LE_OP additive_expression
-    | relational_expression GE_OP additive_expression
+    | additive_expression '<' additive_expression
+    | additive_expression '>' additive_expression
+    | additive_expression LE_OP additive_expression
+    | additive_expression GE_OP additive_expression
+    | additive_expression EQ_OP additive_expression
+    | additive_expression NE_OP additive_expression
     ;
 
 additive_expression
@@ -99,62 +88,61 @@ additive_expression
     ;
 
 multiplicative_expression
-    : prefix_expression
-    | multiplicative_expression '*' prefix_expression
-    | multiplicative_expression '/' prefix_expression
+    : unary_minus_expression
+    | multiplicative_expression '*' unary_minus_expression
+    | multiplicative_expression '/' unary_minus_expression
     ;
 
-prefix_expression
+unary_minus_expression
+    : neg_expression
+    | '-' neg_expression
+    ;
+
+neg_expression
     : primary_expression
-    | prefix_expression '[' expression ']'
-    | prefix_expression '(' ')'
-    | prefix_expression '(' argument_expression_list ')'
-    | '!' prefix_expression
+    | '!' neg_expression
     ;
 
-argument_expression_list
-    : expression
-    | argument_expression_list ',' expression
-    ;
 
 /* 2. Comandos */
-statement
-    : compound_statement
-    | expression_statement
-    | selection_statement
-    | iteration_statement
-    | jump_statement
+command
+    : compound_command
+    | expression_command
+    | selection_command
+    | iteration_command
+    | jump_command
+    | SKIP ';'
     ;
 
-compound_statement
-    : '{' SKIP ';' '}'
-    | '{' block_item_list '}'
+compound_command
+    : '{' declaration_or_command_list '}'
     ;
 
-block_item_list
-    : block_item
-    | block_item_list block_item
+declaration_or_command_list 
+    : declaration_or_command
+    | declaration_or_command_list declaration_or_command
     ;
 
-block_item
+declaration_or_command
     : declaration
-    | statement
+    | command
     ;
 
-expression_statement
-    : expression ';'
+expression_command
+    : ';'
+    | expression ';'
     ;
 
-selection_statement
-    : IF '(' expression ')' compound_statement ELSE compound_statement
-    | IF '(' expression ')' compound_statement
+selection_command
+    : IF '(' expression ')' compound_command ELSE compound_command
+    | IF '(' expression ')' compound_command
     ;
 
-iteration_statement
-    : WHILE '(' expression ')' statement
+iteration_command
+    : WHILE '(' expression ')' command
     ;
 
-jump_statement
+jump_command
     : RETURN ';'
     | RETURN expression ';'
     ;
@@ -191,20 +179,20 @@ type_specifier
     ;
 
 
-/* 4. Unidade de tradução */
-translation_unit
-    : external_declaration
-    | translation_unit external_declaration
+/* 4. Programa */
+program
+    : declaration_or_function_definition
+    | program declaration_or_function_definition
     ;
 
-external_declaration
+declaration_or_function_definition
     : function_definition
     | declaration
     ;
 
 function_definition
-    : type_specifier IDENTIFIER '(' ')' compound_statement
-    | type_specifier IDENTIFIER '(' parameter_declaration_list ')' compound_statement
+    : type_specifier IDENTIFIER '(' ')' compound_command
+    | type_specifier IDENTIFIER '(' parameter_declaration_list ')' compound_command
     ;
 
 %%
