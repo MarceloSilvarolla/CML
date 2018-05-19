@@ -152,8 +152,6 @@ jump_command
 declaration
     : type_specifier IDENTIFIER ';'
     | type_specifier IDENTIFIER '=' expression ';'
-    | type_specifier IDENTIFIER '(' ')' ';'
-    | type_specifier IDENTIFIER '(' parameter_declaration_list ')' ';'
     ;
 
 parameter_declaration_list
