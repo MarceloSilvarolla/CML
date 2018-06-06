@@ -1,0 +1,18 @@
+Library
+  structure CML 
+is
+  datatypes.sml
+  CML.lex:MLLex
+  CML.yacc:MLYacc
+  glue.sml
+  interpreter.sml
+
+  AuxEnvSto/environment.sml
+  AuxEnvSto/store.sml
+  AuxEnvSto/auxiliary.sml
+
+  LearningLib/LearningLib.cm
+
+  $/basis.cm
+  $/ml-yacc-lib.cm
+  $smlnj/compiler/compiler.cm

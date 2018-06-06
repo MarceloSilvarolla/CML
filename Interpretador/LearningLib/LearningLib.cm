@@ -1,0 +1,27 @@
+Library
+    structure Learning
+    structure Dataset
+    structure Model
+is
+    learning.sml
+
+    dataset/dataset.sml
+    dataset/column.sml
+    dataset/columns.sml
+    dataset/load_data.sml
+    dataset/num_rows.sml
+    dataset/remove_columns.sml
+    dataset/rows.sml
+    dataset/save_data.sml
+    
+    models/model.sml
+    models/logistic_regression.sml
+    models/perceptron.sml
+    models/pocket_perceptron.sml
+    models/preprocess_dataset.sml
+
+    $/basis.cm
+    $/smlnj-lib.cm
+
+
+
