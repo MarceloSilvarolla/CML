@@ -2,11 +2,11 @@ structure ExpressibleValue =
 struct
   type dataset = Dataset.dataset
   type model = Model.model
-  type array = Array.array
+  type arrayValue = ArrayValue.arrayValue
   datatype expressibleValue = 
       Int of int | Real of real | Bool of bool | Char of char | String of string 
     | Dataset of dataset | Model of model 
-    | Array of array
+    | ArrayValue of arrayValue
 end
 
 structure ReturnValue =

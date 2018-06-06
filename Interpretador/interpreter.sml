@@ -29,8 +29,8 @@ struct
      let val _ = P(parseTree)
      in ()
      end
-  and P(parseTree:DataTypes.Prog):int = ()
-  and P1(parseTree:DataTypes.Prog):int = ()
+  and P(parseTree:DataTypes.Prog):int = 0
+  and P1(parseTree:DataTypes.Prog):int = 0
   and interpret(fileName:string):unit =
     let val parseTree = parse(fileName)
     in run(parseTree)

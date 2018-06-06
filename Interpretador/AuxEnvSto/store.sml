@@ -3,9 +3,9 @@ struct
   type location = int
 end
 
-structure Array =
+structure ArrayValue =
 struct
-  type array = Location.location list
+  type arrayValue = Location.location list
 end
 
 
@@ -13,10 +13,10 @@ structure StorableValue =
 struct
   type dataset = Dataset.dataset
   type model = Model.model
-  type array = Array.array
+  type arrayValue = ArrayValue.arrayValue
   datatype storableValue = Int of int | Real of real | Bool of bool | Char of
-     char | String of string | Dataset of dataset | Model of model | Array of
-     array | Unused | Undefined 
+     char | String of string | Dataset of dataset | Model of model | ArrayValue of
+     arrayValue | Unused | Undefined 
 end
 
 structure Store =
@@ -42,7 +42,7 @@ struct
     fun leastUnusedLocationAfter(loc:location):location = 
       case sto(loc) of 
           StorableValue.Unused => loc
-        | x      =>  let val loc = leastUnusedLocationAfter(loc+1)
+        | _      =>  let val loc = leastUnusedLocationAfter(loc+1)
                      in loc
                      end
     val loc = leastUnusedLocationAfter(0)
