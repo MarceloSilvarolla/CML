@@ -17,6 +17,11 @@ struct
     | VoidValue
 end
 
+structure ReturnFlag =
+struct
+  type returnFlag = bool
+end
+
 structure Function =
 struct
   type location = Location.location
@@ -38,14 +43,15 @@ end
 
 structure Env =
 struct
-  type Id = DATATYPES.Id
-  val Id = DATATYPES.Id
+  type Id = DataTypes.Id
   type denotableValue = DenotableValue.denotableValue
   type environment = Id -> denotableValue
-  fun (empty:environment)(id) = unbound
+  fun empty(id) = DenotableValue.Unbound
 
-  fun extend(env:environment,Id id:Id,denVal:denotableValue)(Id id1:Id):denotableValue =
-      if id1 = id then denVal else env(id1)
+  fun extend(env:environment,DataTypes.Id
+    id:DataTypes.Id,denVal:denotableValue)(DataTypes.Id id1:DataTypes.Id):denotableValue =
+      if id1 = id then denVal else env(DataTypes.Id id1)
 
-  fun apply(env:Env, Id id:Id):denotableValue = env(Id id)
+  fun apply(env:environment, DataTypes.Id id:DataTypes.Id):denotableValue =
+    env(DataTypes.Id id)
 end
