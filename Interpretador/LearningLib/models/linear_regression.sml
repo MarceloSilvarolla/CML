@@ -1,5 +1,10 @@
 structure LinearRegression =
 struct
+exception MoreThanOneOutput
+exception DivergentNumberOfSamples
+exception NonPositiveLearningRate;
+exception NonPositiveNumberOfEpochs;
+
 fun update_weight(w, x, y, y_, learning_rate, batch_size) =
     if length(w) = 0 then
         []
@@ -27,15 +32,15 @@ fun predict_rec(batch, w) =
     if length(batch) = 0 then
         []
     else
-        dot(hd(batch), w) :: predict_rec(tl(batch), w);
+        Perceptron.dot(hd(batch), w) :: predict_rec(tl(batch), w);
 
 fun sgd(X, y, w, learning_rate, batches) =
     if length(batches) = 0 then
         w
     else
         let
-            val batch = select_elements(X, hd(batches))
-            val y_true = select_elements(y, hd(batches))
+            val batch = LogisticRegression.select_elements(X, hd(batches))
+            val y_true = LogisticRegression.select_elements(y, hd(batches))
             val y_pred = predict_rec(batch, w)
             val w = update_weights(w, batch, y_true, y_pred, length(batch), learning_rate)
         in
@@ -49,7 +54,7 @@ fun squared_error(X, y, w) =
         let
             val x = hd(X)
             val y_true = hd(y)
-            val y_pred = dot(x, w)
+            val y_pred = Perceptron.dot(x, w)
             val se = (y_pred - y_true) * (y_pred - y_true)
         in
             se + squared_error(tl(X), tl(y), w)
@@ -61,7 +66,7 @@ fun train(X, y, w, learning_rate, batch_size, epoch, num_epochs) =
     else
         (print("Epoch: " ^ Int.toString(epoch) ^ " ---- ");
         let
-            val batches = create_batches(random_permutation(length(X)), batch_size, [])
+            val batches = LogisticRegression.create_batches(LogisticRegression.random_permutation(length(X)), batch_size, [])
         in
             let
                 val _ = print("Mean Squared Error = " ^ Real.toString(squared_error(X, y, w) / Real.fromInt(length(X))) ^ "\n")
@@ -84,21 +89,21 @@ fun linear_regression((X_features, X_data), (y_features, y_data), learning_rate,
         raise NonPositiveLearningRate
 	else
 		let
-			val y_col = column((y_features, y_data), hd(y_features))
+			val y_col = Column.column((y_features, y_data), hd(y_features))
 		in
-			if not(is_numeric(y_col)) then
+			if not(PreprocessDataset.is_numeric(y_col)) then
                 raise NonNumericOutputs
             else
                 let
-                    val X_info = inputs_info((X_features, X_data))
-                    val X = preprocess_inputs((X_features, X_data), X_info, true)
-                    val X = add_bias_column(X)
+                    val X_info = PreprocessDataset.inputs_info((X_features, X_data))
+                    val X = PreprocessDataset.preprocess_inputs((X_features, X_data), X_info, true)
+                    val X = PreprocessDataset.add_bias_column(X)
 
-                    val y_info = inputs_info((y_features, y_data))
-                    val y = preprocess_inputs((y_features, y_data), y_info, true)
-                    val y = extract_values(y)
+                    val y_info = PreprocessDataset.inputs_info((y_features, y_data))
+                    val y = PreprocessDataset.preprocess_inputs((y_features, y_data), y_info, true)
+                    val y = PreprocessDataset.extract_values(y)
 
-                    val w = random_vector(get_real_number_of_features(X_info)+1, Random.rand(0,1000000))
+                    val w = Perceptron.random_vector(PreprocessDataset.get_real_number_of_features(X_info)+1, Random.rand(0,1000000))
                 in
                     {model="linear_regression", inputs_info=X_info,
                     outputs_info=(hd(y_features), y_info),
@@ -113,31 +118,31 @@ fun predict_itens(itens, w, ((numeric_features, numeric_info), categorical_info)
 		let
             val mean = hd(hd(numeric_info))
             val stddev = hd(tl(hd(numeric_info)))
-			val pred = dot(hd(itens), w) * stddev + mean
+			val pred = Perceptron.dot(hd(itens), w) * stddev + mean
 		in
 			[Real.toString(pred)] :: predict_itens(tl(itens), w, ((numeric_features, numeric_info), categorical_info))
 		end;
 
 fun predict_values((X_features, X_data), {model=model_name, inputs_info=inputs_info, outputs_info=(y_feature, outputs_info), parameters=parameters}) =
 	let
-		val X = preprocess_inputs((X_features, X_data), inputs_info, true)
-		val X = add_bias_column(X)
+		val X = PreprocessDataset.preprocess_inputs((X_features, X_data), inputs_info, true)
+		val X = PreprocessDataset.add_bias_column(X)
 	in
 		([y_feature], predict_itens(X, parameters, outputs_info))
 	end;
 
 fun format_output_info((((numeric_features, numeric_info), categorical_info))) =
-    format_str_list(numeric_features) ^ format_real_list_list(numeric_info);
+    PreprocessDataset.format_str_list(numeric_features) ^ PreprocessDataset.format_real_list_list(numeric_info);
 
 fun save_linear_regression({model=model_name, inputs_info=inputs_info, outputs_info=(y_feature, outputs_info), parameters=parameters}, filename) =
     let
         val content = model_name ^ "\n";
         val content = content ^ "INPUT_INFO\n"
-        val content = content ^ format_inputs_info(inputs_info)
+        val content = content ^ PreprocessDataset.format_inputs_info(inputs_info)
         val content = content ^ "OUTPUT_INFO\n"
         val content = content ^ format_output_info(outputs_info)
         val content = content ^ "PARAMETERS\n"
-        val content = content ^ format_real_list(parameters)
+        val content = content ^ PreprocessDataset.format_real_list(parameters)
 
         val file = TextIO.openOut(filename);
         val _ = TextIO.output(file, content);
@@ -148,22 +153,22 @@ fun save_linear_regression({model=model_name, inputs_info=inputs_info, outputs_i
 
 fun load_linear_regression(filename) =
 	let
-        val lines = read_file(filename)
+        val lines = LoadData.read_file(filename)
 
         val model_name = hd(lines)
         val lines = tl(lines)
 
-		val (inputs_info, lines) = parse_model_info(lines)
+		val (inputs_info, lines) = PreprocessDataset.parse_model_info(lines)
 
         val lines = tl(lines)
         val y_feature = hd(lines)
         val lines = tl(lines)
-        val y_info = [parse_real_list(hd(lines))]
+        val y_info = [PreprocessDataset.parse_real_list(hd(lines))]
         val lines = tl(lines)
         val outputs_info = (   ([y_feature], y_info), (tl(["dummy"]), tl([["dummy"]]))   )
 
 		val lines = tl(lines)
-		val parameters = parse_real_list(hd(lines))
+		val parameters = PreprocessDataset.parse_real_list(hd(lines))
 	in
 		{model=model_name, inputs_info=inputs_info, outputs_info=(y_feature, outputs_info), parameters=parameters}
 	end;
