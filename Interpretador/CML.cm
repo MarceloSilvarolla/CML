@@ -7,9 +7,7 @@ is
   glue.sml
   interpreter.sml
 
-  AuxEnvSto/environment.sml
-  AuxEnvSto/store.sml
-  AuxEnvSto/auxiliary.sml
+  Aux/auxiliary.sml
 
   LearningLib/LearningLib.cm
 
