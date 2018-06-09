@@ -1,0 +1,253 @@
+1 shift/reduce conflict
+
+error:  state 17: shift/reduce conflict (shift ELSE, reduce by rule 4)
+
+state 0:
+
+	prog : . stmlist 
+
+	ID	shift 6
+	WHILE	shift 5
+	BEGIN	shift 4
+	IF	shift 3
+
+	prog	goto 21
+	stm	goto 2
+	stmlist	goto 1
+
+	.	error
+
+
+state 1:
+
+	prog : stmlist .  (reduce by rule 0)
+	stmlist : stmlist . SEMI stm 
+
+	SEMI	shift 7
+
+
+	.	reduce by rule 0
+
+
+state 2:
+
+	stmlist : stm .  (reduce by rule 6)
+
+
+
+	.	reduce by rule 6
+
+
+state 3:
+
+	stm : IF . ID THEN stm 
+	stm : IF . ID THEN stm ELSE stm 
+
+	ID	shift 8
+
+
+	.	error
+
+
+state 4:
+
+	stm : BEGIN . stmlist END 
+
+	ID	shift 6
+	WHILE	shift 5
+	BEGIN	shift 4
+	IF	shift 3
+
+	stm	goto 2
+	stmlist	goto 9
+
+	.	error
+
+
+state 5:
+
+	stm : WHILE . ID DO stm 
+
+	ID	shift 10
+
+
+	.	error
+
+
+state 6:
+
+	stm : ID . ASSIGN ID 
+
+	ASSIGN	shift 11
+
+
+	.	error
+
+
+state 7:
+
+	stmlist : stmlist SEMI . stm 
+
+	ID	shift 6
+	WHILE	shift 5
+	BEGIN	shift 4
+	IF	shift 3
+
+	stm	goto 12
+
+	.	error
+
+
+state 8:
+
+	stm : IF ID . THEN stm 
+	stm : IF ID . THEN stm ELSE stm 
+
+	THEN	shift 13
+
+
+	.	error
+
+
+state 9:
+
+	stm : BEGIN stmlist . END 
+	stmlist : stmlist . SEMI stm 
+
+	END	shift 14
+	SEMI	shift 7
+
+
+	.	error
+
+
+state 10:
+
+	stm : WHILE ID . DO stm 
+
+	DO	shift 15
+
+
+	.	error
+
+
+state 11:
+
+	stm : ID ASSIGN . ID 
+
+	ID	shift 16
+
+
+	.	error
+
+
+state 12:
+
+	stmlist : stmlist SEMI stm .  (reduce by rule 7)
+
+
+
+	.	reduce by rule 7
+
+
+state 13:
+
+	stm : IF ID THEN . stm 
+	stm : IF ID THEN . stm ELSE stm 
+
+	ID	shift 6
+	WHILE	shift 5
+	BEGIN	shift 4
+	IF	shift 3
+
+	stm	goto 17
+
+	.	error
+
+
+state 14:
+
+	stm : BEGIN stmlist END .  (reduce by rule 3)
+
+
+
+	.	reduce by rule 3
+
+
+state 15:
+
+	stm : WHILE ID DO . stm 
+
+	ID	shift 6
+	WHILE	shift 5
+	BEGIN	shift 4
+	IF	shift 3
+
+	stm	goto 18
+
+	.	error
+
+
+state 16:
+
+	stm : ID ASSIGN ID .  (reduce by rule 1)
+
+
+
+	.	reduce by rule 1
+
+error:  state 17: shift/reduce conflict (shift ELSE, reduce by rule 4)
+
+state 17:
+
+	stm : IF ID THEN stm .  (reduce by rule 4)
+	stm : IF ID THEN stm . ELSE stm 
+
+	ELSE	shift 19
+
+
+	.	reduce by rule 4
+
+
+state 18:
+
+	stm : WHILE ID DO stm .  (reduce by rule 2)
+
+
+
+	.	reduce by rule 2
+
+
+state 19:
+
+	stm : IF ID THEN stm ELSE . stm 
+
+	ID	shift 6
+	WHILE	shift 5
+	BEGIN	shift 4
+	IF	shift 3
+
+	stm	goto 20
+
+	.	error
+
+
+state 20:
+
+	stm : IF ID THEN stm ELSE stm .  (reduce by rule 5)
+
+
+
+	.	reduce by rule 5
+
+
+state 21:
+
+
+	EOF	accept
+
+
+	.	error
+
+15 of 57 action table entries left after compaction
+9 goto table entries
