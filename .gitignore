@@ -1,0 +1,5 @@
+*.un
+*.un~*
+*.swp
+**/OutrasCoisas
+**/.cm

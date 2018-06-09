@@ -134,7 +134,7 @@ expression_command
   | expression SEMICOLON						((ExpCmd (SOME expression)))
 
 selection_command
-  : IF LPAREN expression RPAREN compound_command ELSE compound_command	((SelCmd (expression, compound_command, SOME compound_command)))
+  : IF LPAREN expression RPAREN compound_command ELSE compound_command	((SelCmd (expression, compound_command1, SOME compound_command2)))
   | IF LPAREN expression RPAREN compound_command			((SelCmd (expression, compound_command, NONE)))
 
 iteration_command

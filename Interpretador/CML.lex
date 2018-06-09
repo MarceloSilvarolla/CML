@@ -80,10 +80,6 @@ EOL = ("\013\010" | "\010" | "\013");
 
 <CML>"/*" => ( YYBEGIN COMMENT; continue() );
 <CML>"//".* => ( continue() );
-<CML>{L}{A}* => (case find yytext of SOME v => (col:=yypos-(!eolpos);
-                                               v(!lin,!col))
-                 | _ => (col:=yypos-(!eolpos);
-                         T.IDENTIFIER(yytext,!lin,!col)));
 <CML>{D}+ => (col:=yypos-(!eolpos); T.INT_LITERAL(yytext,!lin,!col));
 <CML>{D}*"."{D}+ => (col:=yypos-(!eolpos); T.REAL_LITERAL(yytext,!lin,!col));
 <CML>{D}+"." => (col:=yypos-(!eolpos); T.REAL_LITERAL(yytext,!lin,!col));	
@@ -112,6 +108,10 @@ EOL = ("\013\010" | "\010" | "\013");
 <CML>"-" => (col:=yypos-(!eolpos); T.MINUS(!lin,!col));
 <CML>"*" => (col:=yypos-(!eolpos); T.TIMES(!lin,!col));
 <CML>"/" => (col:=yypos-(!eolpos); T.DIVIDED(!lin,!col));
+<CML>{L}{A}* => (case find yytext of SOME v => (col:=yypos-(!eolpos);
+                                               v(!lin,!col))
+                 | _ => (col:=yypos-(!eolpos);
+                         T.IDENTIFIER(yytext,!lin,!col)));
 <CML>{WS}* => (continue());
 <CML> . => (continue());
 
