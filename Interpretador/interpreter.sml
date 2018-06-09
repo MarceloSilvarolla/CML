@@ -15,6 +15,7 @@ struct
   exception EmptyProgram
   exception IdentifierNotAFunction
   exception NonIntMainReturn
+  exception NonValidTypesOnAritmeticOperation
 
   fun parse (fileName:string):DataTypes.Prog =
   let val inStream = TextIO.openIn fileName;
@@ -51,6 +52,7 @@ struct
             mainReturn
         end
         handle Bind => raise NonIntMainReturn
+
   and P1(DataTypes.Prog [DataTypes.DecNotFunDef (DataTypes.Dec (typeSpec, DataTypes.Id id, _))])(env,sto):environment*store =
             Dec(DataTypes.Dec (typeSpec, DataTypes.Id id, NONE))(env,sto)
       | P1(DataTypes.Prog [DataTypes.FunDefNotDec funDef])(env, sto):environment*store =
@@ -80,7 +82,7 @@ struct
             P3(DataTypes.Prog decOrFunDefList)(P3(DataTypes.Prog [decOrFunDef])(env,sto))
       | P3(DataTypes.Prog []) (env,sto) = raise EmptyProgram
 
-  and Def(DataTypes.FunDef (typeSpec, DataTypes.Id id, [], cmd))(env, sto):environment = 
+  and Def(DataTypes.FunDef (typeSpec, DataTypes.Id id, [], cmd))(env, sto):environment =
     let
       fun e() = Env.extend(env, DataTypes.Id id, DenotableValue.Function f)
       and f([], sto_func) =
@@ -93,6 +95,7 @@ struct
     in
       e()
     end
+
   and Dec(DataTypes.Dec (typeSpec, DataTypes.Id id, NONE))(env,sto):environment*store =
           let
             val (sto_f,loc) = Store.allocate(sto)
@@ -108,8 +111,8 @@ struct
             val sto_f = Store.update(sto_dec, loc, Store.expressibleToStorable(expVal))
             val env_f = Env.extend(env, DataTypes.Id id, DenotableValue.Location loc)
 
-            val ExpressibleValue.Int intExpVal = expVal
-            val _ = print(Int.toString(intExpVal) ^ "\n")
+            (*val ExpressibleValue.Int intExpVal = expVal
+            val _ = print(Int.toString(intExpVal) ^ "\n")*)
           in
             (env_f,sto_f)
           end
@@ -122,7 +125,7 @@ struct
       | DataTypes.CharLit charLit => (sto, ExpressibleValue.Char (let val SOME charValue = Char.fromString(charLit) in charValue end))
       | DataTypes.StringLit stringLit => (sto, ExpressibleValue.String stringLit))
 
-  |   E(DataTypes.IdOrArrAccessExp (DataTypes.Id id, [])) (env,sto) = 
+  |   E(DataTypes.IdOrArrAccessExp (DataTypes.Id id, [])) (env,sto) =
         let
           val DenotableValue.Location loc = Env.apply(env,DataTypes.Id id)
           val expVal = Store.storableToExpressible (Store.apply(sto,loc))
@@ -139,29 +142,45 @@ struct
             (sto_f, expVal)
           end
 
-  |   E(DataTypes.AddExp (exp_1, exp_2)) (env,sto) = 
-        let 
+  |   E(DataTypes.AddExp (exp_1, exp_2)) (env,sto) =
+        (case E(exp_1)(env,sto) of
+            (sto_1, ExpressibleValue.Int intVal_1) =>
+                (case E(exp_2)(env,sto_1) of
+                    (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Int (intVal_1 + intVal_2))
+                |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Real (Real.fromInt(intVal_1) + realVal_2))
+                |   _ => raise NonValidTypesOnAritmeticOperation
+                )
+        |   (sto_1, ExpressibleValue.Real realVal_1) =>
+                (case E(exp_2)(env,sto_1) of
+                    (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Real (realVal_1 + Real.fromInt(intVal_2)))
+                |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Real (realVal_1 + realVal_2))
+                |   _ => raise NonValidTypesOnAritmeticOperation
+                )
+            |   _ => raise NonValidTypesOnAritmeticOperation
+        )
+        (*
+        let
           val (sto_1, ExpressibleValue.Int intVal_1) = E(exp_1)(env,sto)
-          val _ = print("exp_1 = " ^ Int.toString(intVal_1))
           val (sto_f, ExpressibleValue.Int intVal_2) = E(exp_2)(env,sto_1)
-          val _ = print("exp_2 = " ^ Int.toString(intVal_2))
         in
           (sto_f,ExpressibleValue.Int (intVal_1 + intVal_2))
         end
+        *)
 
   |   E(DataTypes.AppExp (DataTypes.Id id, [])) (env,sto) =
-        let 
+        let
           val DenotableValue.Function f = Env.apply(env, DataTypes.Id id)
           handle Bind => raise IdentifierNotAFunction
           val (sto_f,retVal) = f([], sto)
-          
-          val ExpressibleValue.Int intRetVal = retVal
-          val _ = print("intRetVal = " ^ Int.toString(intRetVal) ^ "\n")
+
+          (*val ExpressibleValue.Int intRetVal = retVal
+          val _ = print("intRetVal = " ^ Int.toString(intRetVal) ^ "\n")*)
         in
           (sto_f, retVal)
-        end 
-  and C(DataTypes.CompCmd decOrCmdList)(env,sto):store*returnFlag*returnValue = 
-    let 
+        end
+
+  and C(DataTypes.CompCmd decOrCmdList)(env,sto):store*returnFlag*returnValue =
+    let
       fun sequence((DataTypes.DecNotCmd dec) :: decOrCmdListTail)(env,sto) =
         sequence(decOrCmdListTail) (Dec(dec)(env,sto))
       |   sequence((DataTypes.CmdNotDec cmd) :: decOrCmdListTail)(env,sto) =
@@ -175,36 +194,36 @@ struct
     in
       (sto_f, retFlag, retVal)
     end
-          
-  |   C(DataTypes.ExpCmd expOption)(env,sto) = 
-    (case expOption of 
+
+  |   C(DataTypes.ExpCmd expOption)(env,sto) =
+    (case expOption of
       SOME exp =>
         let val (sto_f,expVal) = E(exp)(env,sto)
         in
           (Store.printStore(sto_f); (sto_f,false,ExpressibleValue.VoidValue))
         end
     | NONE => (sto,false,ExpressibleValue.VoidValue)
-    
+
     )
-   
+
   |   C(DataTypes.JumpCmd expOption)(env,sto) =
     (case expOption of
       NONE => (sto,true,ExpressibleValue.VoidValue)
-    | SOME exp => 
+    | SOME exp =>
         let
           val (sto_f, retVal) = E(exp)(env,sto)
         in
           (sto_f, true, retVal)
         end
     )
-  
+
   |   C(DataTypes.SelCmd (exp, cmd, NONE))(env,sto) =
     let
       val (sto_exp, ExpressibleValue.Bool exp_val) = E(exp)(env,sto)
     in
       if exp_val then C(cmd)(env,sto_exp) else (sto_exp,false,ExpressibleValue.VoidValue)
     end
-    
+
   |   C(DataTypes.SelCmd (exp, cmd_1, SOME cmd_2))(env,sto) =
     let
       val (sto_exp, ExpressibleValue.Bool exp_val) = E(exp)(env,sto)
@@ -212,7 +231,7 @@ struct
       if exp_val then C(cmd_1)(env,sto_exp) else C(cmd_2)(env,sto_exp)
     end
 
-  
+
   |   C(DataTypes.Skip)(env,sto) = (sto, false, ExpressibleValue.VoidValue)
 
   and interpret(fileName:string):unit =

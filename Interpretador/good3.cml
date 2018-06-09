@@ -1,12 +1,18 @@
 int x = 1;
 int y = 6 + 6;
 
+real r1 = 1.5;
+real r2 = 0.4;
+
 int main() {
+  real r3 = r1+r2;
+  real r4 = x + r3;
   x = 2;
-  if(true){
+  if(false){
     return x;
+  } else {
+    return x+x;
   }
-  return y;
 }
 
 int f() {
@@ -16,4 +22,3 @@ int f() {
   }
   return 100;
 }
-
