@@ -1,0 +1,6 @@
+structure Aux =
+struct
+  
+end
+
+
