@@ -3,11 +3,17 @@ int y = 6 + 6;
 
 int main() {
   x = 2;
-  int y = f() + y;
+  {
+    return x;
+  }
   return y;
 }
 
 int f() {
   y = 25;
-  return y;
+  if(true) {
+    return 200;
+  }
+  return 100;
 }
+

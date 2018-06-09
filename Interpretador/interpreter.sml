@@ -14,6 +14,7 @@ struct
   exception CMLError
   exception EmptyProgram
   exception IdentifierNotAFunction
+  exception NonIntMainReturn
 
   fun parse (fileName:string):DataTypes.Prog =
   let val inStream = TextIO.openIn fileName;
@@ -41,13 +42,15 @@ struct
     end
   and P(parseTree:DataTypes.Prog):int =
         let
-            val (env, sto) = P3(parseTree) (P2(parseTree) (P1(parseTree)(Env.empty, Store.empty)))
-            val main = Env.apply(env, DataTypes.Id "main")
-            val (sto_f, ExpressibleValue.Int mainReturn) = E(DataTypes.AppExp (DataTypes.Id "main", []))(env, sto)
+            val (env_1, sto_1) = P1(parseTree)(Env.empty, Store.empty)
+            val (env_2, sto_2) = P2(parseTree)(env_1, Store.empty)
+            val (env_f, sto_3) = P3(parseTree)(env_2, Store.empty)
+            val main = Env.apply(env_f, DataTypes.Id "main")
+            val (sto_f, ExpressibleValue.Int mainReturn) = E(DataTypes.AppExp (DataTypes.Id "main", []))(env_f, sto_3)
         in
             mainReturn
         end
-  
+        handle Bind => raise NonIntMainReturn
   and P1(DataTypes.Prog [DataTypes.DecNotFunDef (DataTypes.Dec (typeSpec, DataTypes.Id id, _))])(env,sto):environment*store =
             Dec(DataTypes.Dec (typeSpec, DataTypes.Id id, NONE))(env,sto)
       | P1(DataTypes.Prog [DataTypes.FunDefNotDec funDef])(env, sto):environment*store =
@@ -80,13 +83,13 @@ struct
   and Def(DataTypes.FunDef (typeSpec, DataTypes.Id id, [], cmd))(env, sto):environment = 
     let
       fun e() = Env.extend(env, DataTypes.Id id, DenotableValue.Function f)
-      and f([], sto) =
+      and f([], sto_func) =
         let
-          val (sto_1, retFlag, retVal) = c()
+          val (sto_1, retFlag, retVal) = c(sto_func)
         in
           (sto_1,retVal)
         end
-      and c() = C(cmd)(e(), sto)
+      and c(sto_cmd) = C(cmd)(e(), sto_cmd)
     in
       e()
     end
@@ -100,8 +103,11 @@ struct
 
   |   Dec(DataTypes.Dec (typeSpec, DataTypes.Id id, SOME exp))(env,sto):environment*store =
           let
-            val (env_f,sto_1) = Dec(DataTypes.Dec(typeSpec, DataTypes.Id id, NONE)) (env,sto)
-            val (sto_f,expVal) = E(DataTypes.AssignExp (DataTypes.Id id, [], exp)) (env_f,sto_1)
+            val (sto_exp, expVal) = E(exp)(env,sto)
+            val (sto_dec, loc) = Store.allocate(sto_exp)
+            val sto_f = Store.update(sto_dec, loc, Store.expressibleToStorable(expVal))
+            val env_f = Env.extend(env, DataTypes.Id id, DenotableValue.Location loc)
+
             val ExpressibleValue.Int intExpVal = expVal
             val _ = print(Int.toString(intExpVal) ^ "\n")
           in
@@ -136,7 +142,9 @@ struct
   |   E(DataTypes.AddExp (exp_1, exp_2)) (env,sto) = 
         let 
           val (sto_1, ExpressibleValue.Int intVal_1) = E(exp_1)(env,sto)
+          val _ = print("exp_1 = " ^ Int.toString(intVal_1))
           val (sto_f, ExpressibleValue.Int intVal_2) = E(exp_2)(env,sto_1)
+          val _ = print("exp_2 = " ^ Int.toString(intVal_2))
         in
           (sto_f,ExpressibleValue.Int (intVal_1 + intVal_2))
         end
@@ -146,15 +154,66 @@ struct
           val DenotableValue.Function f = Env.apply(env, DataTypes.Id id)
           handle Bind => raise IdentifierNotAFunction
           val (sto_f,retVal) = f([], sto)
+          
+          val ExpressibleValue.Int intRetVal = retVal
+          val _ = print("intRetVal = " ^ Int.toString(intRetVal) ^ "\n")
         in
           (sto_f, retVal)
         end 
-  and C(CompCmd decOrCmdList)(env,sto):store*returnFlag*returnValue = 
-    case decOrCmdList of
-      [] => (sto,false,ExpressibleValue.VoidValue)
-    | [DecNotCmd dec] => Dec(dec)(env,sto)
-    | [CmdNotDec cmd] => C(cmd)(env,sto)
-    (*| decOrCmd::decOrCmdListTail => *)
+  and C(DataTypes.CompCmd decOrCmdList)(env,sto):store*returnFlag*returnValue = 
+    let 
+      fun sequence((DataTypes.DecNotCmd dec) :: decOrCmdListTail)(env,sto) =
+        sequence(decOrCmdListTail) (Dec(dec)(env,sto))
+      |   sequence((DataTypes.CmdNotDec cmd) :: decOrCmdListTail)(env,sto) =
+        let
+          val (sto_1, retFlag, retVal) = C(cmd)(env,sto)
+        in
+          if retFlag then (env,sto_1,true,retVal) else sequence(decOrCmdListTail)(env,sto_1)
+        end
+      |   sequence([])(env,sto) = (env,sto,false,ExpressibleValue.VoidValue)
+      val (env_f,sto_f,retFlag,retVal) = sequence(decOrCmdList)(env,sto)
+    in
+      (sto_f, retFlag, retVal)
+    end
+          
+  |   C(DataTypes.ExpCmd expOption)(env,sto) = 
+    (case expOption of 
+      SOME exp =>
+        let val (sto_f,expVal) = E(exp)(env,sto)
+        in
+          (Store.printStore(sto_f); (sto_f,false,ExpressibleValue.VoidValue))
+        end
+    | NONE => (sto,false,ExpressibleValue.VoidValue)
+    
+    )
+   
+  |   C(DataTypes.JumpCmd expOption)(env,sto) =
+    (case expOption of
+      NONE => (sto,true,ExpressibleValue.VoidValue)
+    | SOME exp => 
+        let
+          val (sto_f, retVal) = E(exp)(env,sto)
+        in
+          (sto_f, true, retVal)
+        end
+    )
+  
+  |   C(DataTypes.SelCmd (exp, cmd, NONE))(env,sto) =
+    let
+      val (sto_exp, ExpressibleValue.Bool exp_val) = E(exp)(env,sto)
+    in
+      if exp_val then C(cmd)(env,sto_exp) else (sto_exp,false,ExpressibleValue.VoidValue)
+    end
+    
+  |   C(DataTypes.SelCmd (exp, cmd_1, SOME cmd_2))(env,sto) =
+    let
+      val (sto_exp, ExpressibleValue.Bool exp_val) = E(exp)(env,sto)
+    in
+      if exp_val then C(cmd_1)(env,sto_exp) else C(cmd_2)(env,sto_exp)
+    end
+
+  
+  |   C(DataTypes.Skip)(env,sto) = (sto, false, ExpressibleValue.VoidValue)
 
   and interpret(fileName:string):unit =
         let val parseTree = parse(fileName)
