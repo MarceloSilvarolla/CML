@@ -3,7 +3,7 @@ int y = 6 + 6;
 
 int main() {
   x = 2;
-  {
+  if(true){
     return x;
   }
   return y;
