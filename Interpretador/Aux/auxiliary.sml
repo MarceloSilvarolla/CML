@@ -136,7 +136,11 @@ struct
   fun apply(env:environment, DataTypes.Id id:DataTypes.Id):denotableValue =
     env(DataTypes.Id id)
   
-  (*fun printEnv(env):unit = 
+  fun printEnvAt(env, DataTypes.Id id):unit =
+    case env(DataTypes.Id id) of
+      Location loc => print("[" ^ id ^ "|->Int.toString(loc))
+    | Function f => print("Function
+  fun printEnv(env):unit = 
     let
       fun printEnvFrom(env,c) = 
         case sto(loc) of
@@ -145,7 +149,7 @@ struct
         | StorableValue.Undefined => (print("{" ^ loc ^ ", " ^ "Undefined" ^ "}\n"); printStoreFrom(sto, loc+1))
     in
       printStoreFrom(sto, 0)
-    end*)
+    end
 
 end
 
