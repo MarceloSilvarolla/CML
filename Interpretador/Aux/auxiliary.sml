@@ -1,7 +1,7 @@
 structure Location =
 struct
   type location = int
-
+  
 end
 
 
@@ -84,6 +84,17 @@ struct
   end
 
   fun deallocate(sto:store,loc:location):store = update(sto,loc,Unused)
+  
+  fun printStore(sto):unit = 
+    let
+      fun printStoreFrom(sto, loc) = 
+        case sto(loc) of
+          StorableValue.Unused => (print("\n"); ())
+        | StorableValue.Int x => (print("{" ^ Int.toString(loc) ^ ", " ^ Int.toString(x) ^ "}\n"); printStoreFrom(sto, loc+1))
+        | StorableValue.Undefined => (print("{" ^ Int.toString(loc) ^ ", " ^ "Undefined" ^ "}\n"); printStoreFrom(sto, loc+1))
+    in
+      printStoreFrom(sto, 0)
+    end
 
 end
 
@@ -124,6 +135,18 @@ struct
 
   fun apply(env:environment, DataTypes.Id id:DataTypes.Id):denotableValue =
     env(DataTypes.Id id)
+  
+  (*fun printEnv(env):unit = 
+    let
+      fun printEnvFrom(env,c) = 
+        case sto(loc) of
+          StorableValue.Unused => (print("\n"); unit)
+        | StorableValue.Int x => (print("{" ^ loc ^ ", " ^ Int.toString(x) ^ "}\n"); printStoreFrom(sto, loc+1))
+        | StorableValue.Undefined => (print("{" ^ loc ^ ", " ^ "Undefined" ^ "}\n"); printStoreFrom(sto, loc+1))
+    in
+      printStoreFrom(sto, 0)
+    end*)
+
 end
 
 
