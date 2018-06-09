@@ -1,2 +1,0 @@
-Skeleton 5
-ae"PiLrValsFun"i2aä¢Token"gp1c"TOKEN"f±ÿjh2aä¢ParserData"h7aä¢Header"h1egp1d"DataTypes"aä¢LrTable"gp2ÿÿCaÿgpÿ&båçð±ÿf6d"Char"Cd"List"d"String"d"General"ÿd"Array"Nbåçð±ÿ=aä¢MlyValue"è0ad"EC"h2ÿ4bÿ‚,æ±ÿ‚3ad"Actions"h2bÿ‚,f2ÿÿ‚3ÿƒNaä¢Tokens"jÿ‚>çð±ã¢Pi_TOKENS"h2aÿ-gp1c"PARSER_DATA"aÿƒ2ÿƒ?
