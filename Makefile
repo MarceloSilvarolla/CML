@@ -1,5 +1,14 @@
+UNAME := $(shell uname)
+
+ifeq ($(UNAME), Linux)
+LDFLAGS = -lfl
+endif
+ifeq ($(UNAME), Darwin)
+LDFLAGS = -ll
+endif
+
 CML: CML.yy.o y.tab.o 
-	gcc CML.yy.o y.tab.o -o CML -lfl
+	gcc CML.yy.o y.tab.o -o CML $(LDFLAGS)
 
 CML.yy.o: CML.yy.c y.tab.c y.tab.h
 	gcc -c CML.yy.c
