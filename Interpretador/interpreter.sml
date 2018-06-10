@@ -416,6 +416,29 @@ struct
     end
 
 
+    |   C(DataTypes.IterCmd (exp, cmd)) (env,sto) =
+        let
+            fun loop(sto_loop, retFlag, retValue) =
+                if retFlag then
+                    (sto_loop, true, retValue)
+                else
+                    (case E(exp)(env, sto_loop) of
+                        (sto_exp, ExpressibleValue.Bool b) =>
+                            if b then
+                                let
+                                    val (sto_f, retFlag, retValue) = C(cmd)(env, sto_exp)
+                                in
+                                    loop(sto_f, retFlag, retValue)
+                                end
+                            else
+                                (sto_exp, false, ExpressibleValue.VoidValue)
+                    |   _ => raise NonBooleanTypeOnLogicOperation
+                    )
+        in
+            loop(sto, false, ExpressibleValue.VoidValue)
+        end
+
+
   |   C(DataTypes.Skip)(env,sto) = (sto, false, ExpressibleValue.VoidValue)
 
   and interpret(fileName:string):unit =
