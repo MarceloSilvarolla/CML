@@ -16,6 +16,12 @@ struct
   exception IdentifierNotAFunction
   exception NonIntMainReturn
   exception NonValidTypesOnAritmeticOperation
+  exception DivisionByZero
+  exception NonBooleanTypeOnLogicOperation
+  exception NonBooleanTypeOnLogicOperation
+  exception VoidValueInComparison
+  exception NonCorrespondingTypesInComparison
+  exception NonComparableTypes
 
   fun parse (fileName:string):DataTypes.Prog =
   let val inStream = TextIO.openIn fileName;
@@ -51,7 +57,7 @@ struct
         in
             mainReturn
         end
-        handle Bind => raise NonIntMainReturn
+        (*handle Bind => raise NonIntMainReturn*)
 
   and P1(DataTypes.Prog [DataTypes.DecNotFunDef (DataTypes.Dec (typeSpec, DataTypes.Id id, _))])(env,sto):environment*store =
             Dec(DataTypes.Dec (typeSpec, DataTypes.Id id, NONE))(env,sto)
@@ -158,14 +164,192 @@ struct
                 )
             |   _ => raise NonValidTypesOnAritmeticOperation
         )
-        (*
+
+    |   E(DataTypes.SubExp (exp_1, exp_2)) (env,sto) =
+          (case E(exp_1)(env,sto) of
+              (sto_1, ExpressibleValue.Int intVal_1) =>
+                  (case E(exp_2)(env,sto_1) of
+                      (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Int (intVal_1 - intVal_2))
+                  |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Real (Real.fromInt(intVal_1) - realVal_2))
+                  |   _ => raise NonValidTypesOnAritmeticOperation
+                  )
+          |   (sto_1, ExpressibleValue.Real realVal_1) =>
+                  (case E(exp_2)(env,sto_1) of
+                      (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Real (realVal_1 - Real.fromInt(intVal_2)))
+                  |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Real (realVal_1 - realVal_2))
+                  |   _ => raise NonValidTypesOnAritmeticOperation
+                  )
+          |   _ => raise NonValidTypesOnAritmeticOperation
+          )
+
+    |   E(DataTypes.MultExp (exp_1, exp_2)) (env,sto) =
+        (case E(exp_1)(env,sto) of
+            (sto_1, ExpressibleValue.Int intVal_1) =>
+                (case E(exp_2)(env,sto_1) of
+                    (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Int (intVal_1 * intVal_2))
+                |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Real (Real.fromInt(intVal_1) * realVal_2))
+                |   _ => raise NonValidTypesOnAritmeticOperation
+                )
+        |   (sto_1, ExpressibleValue.Real realVal_1) =>
+                (case E(exp_2)(env,sto_1) of
+                    (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Real (realVal_1 * Real.fromInt(intVal_2)))
+                |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Real (realVal_1 * realVal_2))
+                |   _ => raise NonValidTypesOnAritmeticOperation
+                )
+        |   _ => raise NonValidTypesOnAritmeticOperation
+        )
+
+    |   E(DataTypes.DivExp (exp_1, exp_2)) (env,sto) =
+        ((case E(exp_1)(env,sto) of
+            (sto_1, ExpressibleValue.Int intVal_1) =>
+                (case E(exp_2)(env,sto_1) of
+                    (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Int (intVal_1 div intVal_2))
+                |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Real (Real.fromInt(intVal_1) / realVal_2))
+                |   _ => raise NonValidTypesOnAritmeticOperation
+                )
+        |   (sto_1, ExpressibleValue.Real realVal_1) =>
+                (case E(exp_2)(env,sto_1) of
+                    (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Real (realVal_1 / Real.fromInt(intVal_2)))
+                |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Real (realVal_1 / realVal_2))
+                |   _ => raise NonValidTypesOnAritmeticOperation
+                )
+            |   _ => raise NonValidTypesOnAritmeticOperation
+        ) handle Div => raise DivisionByZero)
+
+    |   E(DataTypes.UMinusExp exp) (env, sto) =
+        (case E(exp)(env,sto) of
+            (sto_f, ExpressibleValue.Int intVal) => (sto_f, ExpressibleValue.Int (~intVal))
+        |   (sto_f, ExpressibleValue.Real realVal) => (sto_f, ExpressibleValue.Real (~realVal))
+        |   _ => raise NonValidTypesOnAritmeticOperation
+        )
+
+    |   E(DataTypes.OrExp (exp_1, exp_2)) (env, sto) =
+        (case E(exp_1)(env, sto) of
+            (sto_1, ExpressibleValue.Bool boolVal_1) =>
+                (case E(exp_2)(env, sto_1) of
+                    (sto_f, ExpressibleValue.Bool boolVal_2) => (sto_f, ExpressibleValue.Bool (boolVal_1 orelse boolVal_2))
+                |   _ => raise NonBooleanTypeOnLogicOperation
+                )
+        |   _ => raise NonBooleanTypeOnLogicOperation
+        )
+
+    |   E(DataTypes.AndExp (exp_1, exp_2)) (env, sto) =
+        (case E(exp_1)(env, sto) of
+            (sto_1, ExpressibleValue.Bool boolVal_1) =>
+                (case E(exp_2)(env, sto_1) of
+                    (sto_f, ExpressibleValue.Bool boolVal_2) => (sto_f, ExpressibleValue.Bool (boolVal_1 andalso boolVal_2))
+                |   _ => raise NonBooleanTypeOnLogicOperation
+                )
+        |   _ => raise NonBooleanTypeOnLogicOperation
+        )
+
+    |   E(DataTypes.EqExp (exp_1, exp_2)) (env, sto) =
+        (case E(exp_1)(env,sto) of
+            (sto_1, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+        |   (sto_1, ExpressibleValue.Int intVal_1) =>
+                (case E(exp_2)(env,sto_1) of
+                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                |   (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (intVal_1 = intVal_2))
+                |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (Real.==(Real.fromInt(intVal_1), realVal_2)))
+                |   _ => raise NonCorrespondingTypesInComparison
+                )
+        |   (sto_1, ExpressibleValue.Real realVal_1) =>
+                (case E(exp_2)(env,sto_1) of
+                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                |   (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (Real.==(realVal_1, Real.fromInt(intVal_2))))
+                |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (Real.==(realVal_1, realVal_2)))
+                |   _ => raise NonCorrespondingTypesInComparison
+                )
+        |   (sto_1, ExpressibleValue.Bool boolVal_1) =>
+                (case E(exp_2)(env,sto_1) of
+                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                |   (sto_f, ExpressibleValue.Bool boolVal_2) => (sto_f, ExpressibleValue.Bool (boolVal_1 = boolVal_2))
+                |   _ => raise NonCorrespondingTypesInComparison
+                )
+        |   (sto_1, ExpressibleValue.Char charVal_1) =>
+                (case E(exp_2)(env, sto_1) of
+                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                |   (sto_f, ExpressibleValue.Char charVal_2) => (sto_f, ExpressibleValue.Bool (charVal_1 = charVal_2))
+                |   _ => raise NonCorrespondingTypesInComparison
+                )
+        |   (sto_1, ExpressibleValue.String stringVal_1) =>
+                (case E(exp_2)(env,sto_1) of
+                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                |   (sto_f, ExpressibleValue.String stringVal_2) => (sto_f, ExpressibleValue.Bool (stringVal_1 = stringVal_2))
+                |   _ => raise NonCorrespondingTypesInComparison
+                )
+        (*TODO: comparações entre datasets, models e arrays?*)
+        |   _ => raise NonComparableTypes
+        )
+
+    |   E(DataTypes.NeExp (exp_1, exp_2)) (env, sto) =
         let
-          val (sto_1, ExpressibleValue.Int intVal_1) = E(exp_1)(env,sto)
-          val (sto_f, ExpressibleValue.Int intVal_2) = E(exp_2)(env,sto_1)
+            val (sto_f, ExpressibleValue.Bool boolVal) = E(DataTypes.EqExp (exp_1, exp_2))(env, sto)
         in
-          (sto_f,ExpressibleValue.Int (intVal_1 + intVal_2))
+            (sto_f, ExpressibleValue.Bool (not(boolVal)))
         end
-        *)
+
+    |   E(DataTypes.LtExp (exp_1, exp_2)) (env, sto) =
+        (case E(exp_1)(env,sto) of
+            (sto_1, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+        |   (sto_1, ExpressibleValue.Int intVal_1) =>
+                (case E(exp_2)(env,sto_1) of
+                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                |   (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (intVal_1 < intVal_2))
+                |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (Real.fromInt(intVal_1) < realVal_2))
+                |   _ => raise NonComparableTypes
+                )
+        |   (sto_1, ExpressibleValue.Real realVal_1) =>
+                (case E(exp_2)(env,sto_1) of
+                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                |   (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (realVal_1 < Real.fromInt(intVal_2)))
+                |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (realVal_1 < realVal_2))
+                |   _ => raise NonComparableTypes
+                )
+        |   _ => raise NonComparableTypes
+        )
+
+    |   E(DataTypes.LeExp (exp_1, exp_2)) (env, sto) =
+        (case E(exp_1)(env,sto) of
+            (sto_1, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+        |   (sto_1, ExpressibleValue.Int intVal_1) =>
+                (case E(exp_2)(env,sto_1) of
+                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                |   (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (intVal_1 <= intVal_2))
+                |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (Real.fromInt(intVal_1) <= realVal_2))
+                |   _ => raise NonComparableTypes
+                )
+        |   (sto_1, ExpressibleValue.Real realVal_1) =>
+                (case E(exp_2)(env,sto_1) of
+                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                |   (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (realVal_1 <= Real.fromInt(intVal_2)))
+                |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (realVal_1 <= realVal_2))
+                |   _ => raise NonComparableTypes
+                )
+        |   _ => raise NonComparableTypes
+        )
+
+    |   E(DataTypes.GtExp (exp_1, exp_2)) (env, sto) =
+        let
+            val (sto_f, ExpressibleValue.Bool boolVal) = E(DataTypes.LeExp (exp_1, exp_2))(env,sto)
+        in
+            (sto_f, ExpressibleValue.Bool (not(boolVal)))
+        end
+
+    |   E(DataTypes.GeExp (exp_1, exp_2)) (env, sto) =
+        let
+            val (sto_f, ExpressibleValue.Bool boolVal) = E(DataTypes.LtExp (exp_1, exp_2))(env,sto)
+        in
+            (sto_f, ExpressibleValue.Bool (not(boolVal)))
+        end
+
+    |   E(DataTypes.NegExp exp) (env, sto) =
+        (case E(exp)(env, sto) of
+            (sto_f, ExpressibleValue.Bool boolVal) => (sto_f, ExpressibleValue.Bool (not(boolVal)))
+        |   _ => raise NonBooleanTypeOnLogicOperation)
+
+    |   E(DataTypes.ParenExp exp) (env, sto) = E(exp)(env, sto)
+
 
   |   E(DataTypes.AppExp (DataTypes.Id id, [])) (env,sto) =
         let
