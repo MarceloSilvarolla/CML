@@ -1,19 +1,22 @@
-int x = 1;
-int y = 6 + 6;
+
+int[][] a = {{0, 1}, {3, 4}, {3, 4}, {f(), 0}};
+
+real h(int x, real y){
+  return x+y;
+}
 
 int main() {
-  x = 2;
-  if(true){
-    return x;
-  }
-  return y;
+  a[2][0] = -1;
+
+  real r;
+  r = h(1, 4.0);
+
+  return 0;
 }
 
 int f() {
-  y = 25;
   if(true) {
     return 200;
   }
   return 100;
 }
-
