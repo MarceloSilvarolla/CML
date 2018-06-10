@@ -105,6 +105,31 @@ struct
       e()
     end
 
+  |   Def(DataTypes.FunDef (typeSpec, DataTypes.Id id, param_dec_list, cmd))(env, sto):environment =
+    let
+        fun e() = Env.extend(env, DataTypes.Id id, DenotableValue.Function f)
+        and f(arr, sto_func) =
+            let
+                val env_1 = modifyEnv(e(), param_dec_list, arr)
+                val (sto_1, retFlag, retVal) = c(sto_func, env_1)
+            in
+                (sto_1, retVal)
+            end
+        and c(sto_cmd, env) = C(cmd)(env, sto_cmd)
+        and modifyEnv(env, param_dec_list, arr) =
+            (case param_dec_list of
+                [] => env
+            |   (DataTypes.Dec (typeSpec, DataTypes.Id id, NONE)) :: param_dec_list_tail =>
+                    let
+                        val env_2 = Env.extend(env, DataTypes.Id id, DenotableValue.Location (hd(arr)))
+                    in
+                        modifyEnv(env_2, param_dec_list_tail, tl(arr))
+                    end
+            )
+    in
+        e()
+    end
+
   and Dec(DataTypes.Dec (typeSpec, DataTypes.Id id, NONE))(env,sto):environment*store =
           let
             val (sto_f,loc) = Store.allocate(sto)
@@ -429,6 +454,31 @@ struct
           val _ = print("intRetVal = " ^ Int.toString(intRetVal) ^ "\n")*)
         in
           (sto_f, retVal)
+        end
+
+    |   E(DataTypes.AppExp (DataTypes.Id id, expList)) (env, sto) =
+        let
+            val DenotableValue.Function f = Env.apply(env, DataTypes.Id id)
+            handle Bind => raise IdentifierNotAFunction
+
+            fun locations(expList, sto) =
+                (case expList of
+                    [] => ([], sto)
+                |   (exp :: expListTail) =>
+                        let
+                            val (sto_1, expVal) = E(exp)(env, sto)
+                            val (sto_2, loc) = Store.allocate(sto_1)
+                            val sto_3 = Store.update(sto_2, loc, Store.expressibleToStorable(expVal))
+                            val (arr, sto_4) = locations(expListTail, sto_3)
+                        in
+                            (loc :: arr, sto_4)
+                        end
+                )
+
+            val (params, sto_loc) = locations(expList, sto)
+            val (sto_f, retVal) = f(params, sto_loc)
+        in
+            (sto_f, retVal)
         end
 
   and C(DataTypes.CompCmd decOrCmdList)(env,sto):store*returnFlag*returnValue =

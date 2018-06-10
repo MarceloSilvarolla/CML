@@ -1,8 +1,15 @@
 
 int[][] a = {{0, 1}, {3, 4}, {3, 4}, {f(), 0}};
 
+real h(int x, real y){
+  return x+y;
+}
+
 int main() {
-  a[2][2] = -1;
+  a[2][0] = -1;
+
+  real r;
+  r = h(1, 4.0);
 
   return 0;
 }
