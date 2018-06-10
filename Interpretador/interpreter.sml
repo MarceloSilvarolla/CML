@@ -164,6 +164,31 @@ struct
           in
             (sto_f, expVal)
           end
+  |   E(DataTypes.AssignExp (DataTypes.Id id, expList, exp)) (env, sto) =
+        let
+            val (sto_exp, expVal) = E(exp)(env,sto)
+            val DenotableValue.Location loc = Env.apply(env, DataTypes.Id id)
+
+            fun getElementAt([], pos) = raise OutOfRangeIndex
+            |   getElementAt(arr, pos) = if pos = 0 then hd(arr) else getElementAt(tl(arr), pos-1)
+
+            fun updateArray(loc, expList, sto) =
+                (case expList of
+                    [] => Store.update(sto, loc, Store.expressibleToStorable(expVal))
+                |   (exp :: expListTail) =>
+                        (case Store.apply(sto, loc) of
+                            StorableValue.ArrayValue arr =>
+                                (case E(exp)(env, sto) of
+                                    (sto_exp, ExpressibleValue.Int pos) =>
+                                        updateArray(getElementAt(arr, pos), expListTail, sto_exp)
+                                |   _ => raise NotAnIntegerIndex
+                                )
+                        |   _ => raise NotAnArrayAcess
+                        )
+                )
+        in
+            (updateArray(loc, expList, sto), expVal)
+        end
 
   |   E(DataTypes.AddExp (exp_1, exp_2)) (env,sto) =
         (case E(exp_1)(env,sto) of

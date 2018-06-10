@@ -92,7 +92,18 @@ struct
           StorableValue.Unused => (print("\n"); ())
         | StorableValue.Int x => (print("{" ^ Int.toString(loc) ^ ", " ^ Int.toString(x) ^ "}\n"); printStoreFrom(sto, loc+1))
         | StorableValue.Real x => (print("{" ^ Int.toString(loc) ^ ", " ^ Real.toString(x) ^ "}\n"); printStoreFrom(sto, loc+1))
+        | StorableValue.Bool x => (print("{" ^ Int.toString(loc) ^ ", " ^ (if x then "true" else "false") ^ "}\n"); printStoreFrom(sto, loc+1))
+        | StorableValue.Char x => (print("{" ^ Int.toString(loc) ^ ", '" ^ Char.toString(x) ^ "'}\n"); printStoreFrom(sto, loc+1))
         | StorableValue.Undefined => (print("{" ^ Int.toString(loc) ^ ", " ^ "Undefined" ^ "}\n"); printStoreFrom(sto, loc+1))
+        | StorableValue.ArrayValue arr =>
+            (let
+                fun printArrayEntries(a) =
+                    (case a of
+                        [] => ()
+                    |   (x :: aTail) => (print(Int.toString(x) ^ " "); printArrayEntries(aTail)))
+            in
+                (print("{" ^ Int.toString(loc) ^ ", [ "); printArrayEntries(arr); print("]}\n"); printStoreFrom(sto, loc+1))
+            end)
     in
       printStoreFrom(sto, 0)
     end
@@ -137,7 +148,7 @@ struct
   fun apply(env:environment, DataTypes.Id id:DataTypes.Id):denotableValue =
     env(DataTypes.Id id)
 
-    fun printEnvAt(env, DataTypes.Id id):unit =
+    (*fun printEnvAt(env, DataTypes.Id id):unit =
         case env(DataTypes.Id id) of
           Location loc => print("[" ^ id ^ "|->Int.toString(loc))
         | Function f => print("Function
@@ -150,6 +161,6 @@ struct
             | StorableValue.Undefined => (print("{" ^ loc ^ ", " ^ "Undefined" ^ "}\n"); printStoreFrom(sto, loc+1))
         in
           printStoreFrom(sto, 0)
-        end
+        end*)
 
     end
