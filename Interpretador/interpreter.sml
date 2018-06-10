@@ -22,6 +22,9 @@ struct
   exception VoidValueInComparison
   exception NonCorrespondingTypesInComparison
   exception NonComparableTypes
+  exception NotAnArrayAcess
+  exception NotAnIntegerIndex
+  exception OutOfRangeIndex
 
   fun parse (fileName:string):DataTypes.Prog =
   let val inStream = TextIO.openIn fileName;
@@ -363,6 +366,32 @@ struct
         |   _ => raise NonBooleanTypeOnLogicOperation)
 
     |   E(DataTypes.ParenExp exp) (env, sto) = E(exp)(env, sto)
+
+
+    |   E(DataTypes.IdOrArrAccessExp (DataTypes.Id id, expList)) (env, sto) =
+        let
+            val DenotableValue.Location loc = Env.apply(env, DataTypes.Id id)
+
+            fun getElementAt([], pos) = raise OutOfRangeIndex
+            |   getElementAt(arr, pos) = if pos = 0 then hd(arr) else getElementAt(tl(arr), pos-1)
+
+            fun applyArray(loc, expList, sto) =
+                (case expList of
+                    [] => (sto, Store.storableToExpressible(Store.apply(sto, loc)))
+                |   (exp :: expListTail) =>
+                        (case Store.apply(sto, loc) of
+                            StorableValue.ArrayValue arr =>
+                                (case E(exp)(env, sto) of
+                                    (sto_exp, ExpressibleValue.Int pos) =>
+                                        applyArray(getElementAt(arr, pos), expListTail, sto_exp)
+                                |   _ => raise NotAnIntegerIndex
+                                )
+                        |   _ => raise NotAnArrayAcess
+                        )
+                )
+        in
+            applyArray(loc, expList, sto)
+        end
 
 
   |   E(DataTypes.AppExp (DataTypes.Id id, [])) (env,sto) =
