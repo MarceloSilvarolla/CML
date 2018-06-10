@@ -131,6 +131,20 @@ struct
       | DataTypes.CharLit charLit => (sto, ExpressibleValue.Char (let val SOME charValue = Char.fromString(charLit) in charValue end))
       | DataTypes.StringLit stringLit => (sto, ExpressibleValue.String stringLit))
 
+    |   E(DataTypes.ArrExp expList)(env, sto) =
+        (case expList of
+            [] => (sto, ExpressibleValue.ArrayValue [])
+        |   (exp :: expListTail) =>
+                let
+                    val (sto_1, expVal) = E(exp)(env,sto)
+                    val (sto_2, loc) = Store.allocate(sto_1)
+                    val sto_3 = Store.update(sto_2, loc, Store.expressibleToStorable(expVal))
+                    val (sto_f, ExpressibleValue.ArrayValue arrTail) = E(DataTypes.ArrExp expListTail)(env, sto_3)
+                in
+                    (sto_f, ExpressibleValue.ArrayValue (loc :: arrTail))
+                end
+        )
+
   |   E(DataTypes.IdOrArrAccessExp (DataTypes.Id id, [])) (env,sto) =
         let
           val DenotableValue.Location loc = Env.apply(env,DataTypes.Id id)
