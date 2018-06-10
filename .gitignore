@@ -3,3 +3,8 @@
 *.swp
 **/OutrasCoisas
 **/.cm
+Interpretador/CML.lex.sml
+Interpretador/CML.yacc.sml
+Interpretador/CML.yacc.desc
+Interpretador/CML.yacc.sig
+

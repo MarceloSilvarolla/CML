@@ -138,15 +138,19 @@ struct
   
   fun printEnvAt(env, DataTypes.Id id):unit =
     case env(DataTypes.Id id) of
-      Location loc => print("[" ^ id ^ "|->Int.toString(loc))
-    | Function f => print("Function
+      Location loc => print("(" ^ id ^ ": " ^ Int.toString(loc) ^ ")\n")
+    | Function f => print("(" ^ id ^ ": function)\n")
+    | Unbound => ()
+
+  (*fun charListsWithLengthLessThan(l:int):char list list =
+    (case l of
+      0 => []
+    | l =>
+      fun c(
+    )*)
   fun printEnv(env):unit = 
     let
-      fun printEnvFrom(env,c) = 
-        case sto(loc) of
-          StorableValue.Unused => (print("\n"); unit)
-        | StorableValue.Int x => (print("{" ^ loc ^ ", " ^ Int.toString(x) ^ "}\n"); printStoreFrom(sto, loc+1))
-        | StorableValue.Undefined => (print("{" ^ loc ^ ", " ^ "Undefined" ^ "}\n"); printStoreFrom(sto, loc+1))
+        printEnvAt(env, DataTypes.Id str(chr(0)))
     in
       printStoreFrom(sto, 0)
     end
