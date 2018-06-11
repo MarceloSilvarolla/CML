@@ -142,6 +142,27 @@ struct
   type environment = Id -> denotableValue
   fun empty(id) = DenotableValue.Unbound
   fun apply(env, DataTypes.Id id) = env(DataTypes.Id id)
+  fun initial(DataTypes.Id id) = (
+      case id of
+	  "load_data" => DenotableValue.Function Learning.load_data
+       |  "save_data" => DenotableValue.Function Learning.save_data
+       |  "columns" => DenotableValue.Function Learning.remove_columns
+       | "remove_columns"  => DenotableValue.Function Learning.remove_columns
+       | "rows" => DenotableValue.Function Learning.rows
+       | "num_rows" => DenotableValue.Function Learning.num_rows
+					       
+       | "perceptron" => DenotableValue.Function Learning.perceptron
+       | "pocket_perceptron" => DenotableValue.Function Learning.pocket_perceptron
+       | "logistic_regression" => DenotableValue.Function LearnignLib.logistic_regression
+       | "linear_regression" => DenotableValue.Function Learning.linear_regression
+
+       | "predict" => DenotableValue.Function Learning.predict
+       | "load_model" => DenotableValue.Function Learning.load_model
+       | "save_model" => DenotableValue.Function Learning.save_model
+
+       | _ => empty(id)
+  )
+
   fun extend(env:environment,DataTypes.Id
     id:DataTypes.Id,denVal:denotableValue)(DataTypes.Id id1:DataTypes.Id):denotableValue =
       if id1 = id then denVal else env(DataTypes.Id id1)
