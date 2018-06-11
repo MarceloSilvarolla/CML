@@ -1,7 +1,7 @@
 structure CML :
 sig val parse : string -> DataTypes.Prog
     val run : DataTypes.Prog -> unit
-    val typeCheck : DataTypes.Prog -> unit
+    val typeCheck : DataTypes.Prog -> LocalTypeEnv.environment * GlobalTypeEnv.environment
     val interpret : string -> unit
 end =
 struct
@@ -13,24 +13,26 @@ struct
   type returnFlag = ReturnFlag.returnFlag
 
   exception ParseError
-  exception EmptyProgram
-  exception IdentifierNotAFunction
+  exception NonFunctionApplication
+  exception NonFunctionApplicationBug
   exception NonIntMainReturn
-  exception NonValidTypesOnAritmeticOperation
+  exception NonIntMainReturnBug
+  exception InvalidTypeInArithmeticOperation
+  exception InvalidTypeInArithmeticOperationBug
   exception DivisionByZero
-  exception NonBooleanTypeOnLogicOperation
-  exception NonBooleanTypeOnLogicOperation
-  exception VoidValueInComparison
-  exception NonCorrespondingTypesInComparison
-  exception NonComparableTypes
-  exception NotAnArrayAcess
-  exception NotAnIntegerIndex
+  exception InvalidTypeInLogicalOperation
+  exception InvalidTypeInLogicalOperationBug
+  exception IncomparableTypes
+  exception IncomparableTypesBug
+  exception InvalidTypeInComparison
+  exception InvalidTypeInComparisonBug
+  exception TooManyIndicesInArrayAccess
+  exception TooManyIndicesInArrayAccessBug
+  exception InvalidTypeInArrayAccessIndex
+  exception InvalidTypeInArrayAccessIndexBug
   exception OutOfRangeIndex
-  exception TemErroNoDef
-  exception InconsistentSortsOfArrayElements
-  exception OrOfNonBooleanExpressions
-  exception AndOfNonBooleanExpressions
-  exception NegOfNonBooleanExpression
+  exception DefBug
+  exception ArrayElementsOfInconsistentTypes
   (* 1: parsing (using MLLex and MLYacc) *)
   fun parse (fileName:string):DataTypes.Prog =
   let val inStream = TextIO.openIn fileName;
@@ -54,89 +56,159 @@ struct
   end
   (* 2: type-checking *)
   and typeCheck(parseTree:DataTypes.Prog):LocalTypeEnv.environment * GlobalTypeEnv.environment =
-    typeCheckP(parseTree)(emptyEnv)
+    typeCheckP(parseTree)
   
-  and typeCheckP(prog):LocalTypeEnv.environment * GlobalTypeEnv.environment =
+  and typeCheckP(prog:DataTypes.Prog):LocalTypeEnv.environment * GlobalTypeEnv.environment =
     let 
-      val (localFuncTypeEnv, globalFuncTypeEnv) = typeCheckP1(prog)(LocalTypeEnv.emptyEnv, GlobalTypeEnv.emptyEnv)
-      val (finalLocalTypeEnv, finalGlobalTypeEnv) = typeCheckP2(prog)(localfuncTypeEnv, globalFuncTypeEnv)
+      val (localFuncTypeEnv, globalFuncTypeEnv) = typeCheckP1(prog)(LocalTypeEnv.empty, GlobalTypeEnv.empty)
+      val (finalLocalTypeEnv, finalGlobalTypeEnv) = typeCheckP2(prog)(localFuncTypeEnv, globalFuncTypeEnv)
     in
       (finalLocalTypeEnv, finalGlobalTypeEnv)
     end
   (* 2.1: type-checking function definitions and adding them to the type environment *)
-  and typeCheckP1([])(localEnv, globalEnv) = (localEnv, globalEnv)
-  and typeCheckP1((DataTypes.FunDefNotDec (DataTypes.FunDef (typeSpec, DataTypes.Id id, params, cmd))) :: progTail)(localEnv, globalEnv) =
+  and typeCheckP1((DataTypes.Prog []) : DataTypes.Prog)(localEnv, globalEnv) = (localEnv, globalEnv)
+  |   typeCheckP1(DataTypes.Prog ( (DataTypes.FunDefNotDec (DataTypes.FunDef (typeSpec, DataTypes.Id id, params, cmd))) :: progTail) )
+   (localEnv, globalEnv) =
     let 
       val returnSort = Sort.typeSpecSort(typeSpec)
-      val inputSort = Sort.Product (map
-        (fn (typeSpec, _, _) => Sort.typeSpecSort(typeSpec))
+      val inputSort = Sort.Product (
+        map
+        (fn DataTypes.Dec (typeSpec, _, _) => Sort.typeSpecSort(typeSpec))
         params)
       val functionSort = Sort.To (inputSort, returnSort)
       val newLocalEnv = LocalTypeEnv.extend(localEnv, DataTypes.Id id, functionSort)
       val newGlobalEnv = GlobalTypeEnv.extend(globalEnv, DataTypes.Id id, functionSort)
     in
-      typeCheckP1(progTail)(newLocalEnv, newGlobalEnv)
+      typeCheckP1(DataTypes.Prog progTail)(newLocalEnv, newGlobalEnv)
     end 
-  and typeCheckP1(_:: progTail)(localEnv, globalEnv) = typeCheckP1(progTail)
+  |   typeCheckP1(DataTypes.Prog (_:: progTail))(localEnv, globalEnv) = typeCheckP1(DataTypes.Prog progTail)(localEnv, globalEnv)
   (* 2.2: type-checking everything using function types from step 2.1 *) 
-  and typeCheckP2([])(localEnv, globalEnv) = (localEnv, globalEnv)
-  and typeCheckP2( (DataTypes.DecNotFunDef dec) :: progTail)(localEnv, globalEnv) =
+  and typeCheckP2(DataTypes.Prog [])(localEnv, globalEnv) = (localEnv, globalEnv)
+
+  |   typeCheckP2(DataTypes.Prog ((DataTypes.DecNotFunDef dec) :: progTail))(localEnv, globalEnv) =
     let
       val (newLocalEnv, newGlobalEnv) = typeCheckDec(dec)(localEnv, globalEnv)
     in
-      typeCheckP2(progTail)(newLocalEnv, newGlobalEnv) 
+      typeCheckP2(DataTypes.Prog progTail)(newLocalEnv, newGlobalEnv) 
     end
-  and typeCheckP2( (DataTypes.FunDefNotDec funDef) :: progTail)(localEnv, globalEnv) = 
+
+  |   typeCheckP2( DataTypes.Prog ((DataTypes.FunDefNotDec funDef) :: progTail) )(localEnv, globalEnv) = 
     let
       val (newLocalEnv, newGlobalEnv) = typeCheckDef(funDef)(localEnv, globalEnv)
     in
-      typeCheckP2(progTail)(newLocalEnv, newGlobalEnv)
+      typeCheckP2(DataTypes.Prog progTail)(newLocalEnv, newGlobalEnv)
     end
-  and typeCheckDec(DataTypes.Dec (typeSpec, DataTypes.Id id, NONE)(localEnv, globalEnv) =
+
+  and typeCheckDec(DataTypes.Dec (typeSpec, DataTypes.Id id, NONE))(localEnv, globalEnv) =
     let
       val newLocalEnv = LocalTypeEnv.extend(localEnv, DataTypes.Id id, Sort.typeSpecSort(typeSpec))
       val newGlobalEnv =  GlobalTypeEnv.extend(globalEnv, DataTypes.Id id, Sort.typeSpecSort(typeSpec))
     in
       (newLocalEnv, newGlobalEnv)
     end
-  and typeCheckDec(DataTypes.Dec (typeSpec, DataTypes.Id id, SOME exp)(localEnv, globalEnv) =
+
+  (* TODO *)
+  and typeCheckDef(DataTypes.FunDef _) (localEnv, globalEnv) = (localEnv, globalEnv)
+
+  (* testar consistencia, nao igualdade de tipos!!!! *)
+  (*and typeCheckDec(DataTypes.Dec (typeSpec, DataTypes.Id id, SOME exp))(localEnv, globalEnv) =*)
     
   and typify(DataTypes.LitExp litExp)(globalEnv):Sort.sort  =
     (case litExp of
-      DataTypes.IntLit intLit = Sort.Int
-    | DataTypes.RealLit realLit = Sort.Real
-    | DataTypes.BoolLit realLit = Sort.Bool
-    | DataTypes.CharLit realLit = Sort.Char
-    | DataTypes.StringLit realLit = Sort.String
+      DataTypes.IntLit intLit => Sort.Int
+    | DataTypes.RealLit realLit => Sort.Real
+    | DataTypes.BoolLit realLit => Sort.Bool
+    | DataTypes.CharLit realLit => Sort.Char
+    | DataTypes.StringLit realLit => Sort.String
     )
-  and typify(DataTypes.ArrExp arrExp)(globalEnv):Sort.sort = 
-   let 
+
+  |   typify(DataTypes.ArrExp arrExp)(globalEnv):Sort.sort = 
+   (let 
      val expSorts = map (fn exp => typify(exp)(globalEnv)) arrExp
    in
-     Sort.Array commonSort(expSorts)
+     Sort.Array (Sort.commonSortList(expSorts))
    end
-   handle Sort.InconsistentSorts => raise InconsistentSortsOfArrayElements
-  and typify(DataTypes.OrExp (exp_1, exp_2))(globalEnv):Sort.sort =
-    let 
-      val sort_1 = typify(exp_1) 
-      val sort_2 = typify(exp_2)
-      val _ = if commonSort(sort_1, sort_2) = Sort.Bool 
-              then () 
-              else raise OrOfNonBooleanExpressions
-      handle Sort.InconsistentSorts => raise OrOfNonBooleanExpressions
-    in
-      Sort.Bool
+   handle Sort.InconsistentSorts => raise ArrayElementsOfInconsistentTypes)
 
-   and typify(DataTypes.AndExp (exp_1, exp_2))(globalEnv):Sort.sort
-    let 
-      val sort_1 = typify(exp_1) 
-      val sort_2 = typify(exp_2)
-      val _ = if commonSort(sort_1, sort_2) = Sort.Bool 
-              then () 
-              else raise AndOfNonBooleanExpressions
-      handle Sort.InconsistentSorts => raise AndOfNonBooleanExpressions
+  |   typify(DataTypes.OrExp (exp_1, exp_2))(globalEnv):Sort.sort =
+    (let 
+      val sort_1 = typify(exp_1)(globalEnv)
+      val sort_2 = typify(exp_2)(globalEnv)
+      val _ = (case Sort.commonSort(sort_1, sort_2) of Sort.Bool => () 
+              | _ => raise InvalidTypeInLogicalOperation)
+      handle Sort.InconsistentSorts => raise InvalidTypeInLogicalOperation
     in
       Sort.Bool
+    end)
+
+   |   typify(DataTypes.AndExp (exp_1, exp_2))(globalEnv):Sort.sort =
+    (let 
+      val sort_1 = typify(exp_1)(globalEnv)
+      val sort_2 = typify(exp_2)(globalEnv)
+      val _ = (case Sort.commonSort(sort_1, sort_2) of Sort.Bool => ()
+              | _ => raise InvalidTypeInLogicalOperation)
+      handle Sort.InconsistentSorts => raise InvalidTypeInLogicalOperation
+    in
+      Sort.Bool
+    end)
+
+  |   typify(DataTypes.NegExp exp_1)(globalEnv):Sort.sort =
+    (let
+      val sort_1 = typify(exp_1)(globalEnv)
+      val _ = (case sort_1 of Sort.Bool => () | _ => raise InvalidTypeInLogicalOperation)
+    in
+      Sort.Bool
+    end)
+
+  |   typify(DataTypes.EqExp (exp_1, exp_2))(globalEnv):Sort.sort =
+    (let
+      val sort_1 = typify(exp_1)(globalEnv)
+      val sort_2 = typify(exp_2)(globalEnv)
+      val _ =
+        (case (sort_1, sort_2) of
+          (Sort.Int, Sort.Int) => ()
+        | (Sort.Int, Sort.Real) => ()
+        | (Sort.Real, Sort.Int) => ()
+        | (Sort.Real, Sort.Real) => ()
+        | (Sort.Char, Sort.Char) => ()
+        | (Sort.Bool, Sort.Bool) => ()
+        | (Sort.String, Sort.String) => ()
+        | (Sort.Dataset, _) => raise InvalidTypeInComparison
+        | (_, Sort.Dataset) => raise InvalidTypeInComparison
+        | (Sort.Model, _) => raise InvalidTypeInComparison
+        | (_, Sort.Model) => raise InvalidTypeInComparison
+        | (Sort.Array _, _) => raise InvalidTypeInComparison
+        | (_, Sort.Array _) => raise InvalidTypeInComparison
+        | (Sort.Void, _) => raise InvalidTypeInComparison
+        | (_, Sort.Void) => raise InvalidTypeInComparison
+        | (Sort.Unbound, _) => raise InvalidTypeInComparisonBug
+        | (_, Sort.Unbound) => raise InvalidTypeInComparisonBug
+        | (Sort.Any, _) => raise InvalidTypeInComparisonBug
+        | (_, Sort.Any) => raise InvalidTypeInComparisonBug
+        | (Sort.Product _, _) => raise InvalidTypeInComparisonBug
+        | (_, Sort.Product _) => raise InvalidTypeInComparisonBug
+        | (Sort.To _, _) => raise InvalidTypeInComparisonBug
+        | (_, Sort.To _) => raise InvalidTypeInComparisonBug
+        | _ => raise IncomparableTypes
+        )
+    in
+      Sort.Bool
+    end)
+
+  |   typify(DataTypes.NeExp (exp_1, exp_2))(globalEnv):Sort.sort =
+    typify(DataTypes.EqExp (exp_1, exp_2)) globalEnv
+
+ |   typify(DataTypes.LtExp (exp_1, exp_2))(globalEnv):Sort.sort =
+    typify(DataTypes.EqExp (exp_1, exp_2)) globalEnv
+
+ |   typify(DataTypes.LeExp (exp_1, exp_2))(globalEnv):Sort.sort =
+    typify(DataTypes.EqExp (exp_1, exp_2)) globalEnv
+
+  |   typify(DataTypes.GtExp (exp_1, exp_2))(globalEnv):Sort.sort =
+    typify(DataTypes.EqExp (exp_1, exp_2)) globalEnv
+
+  |   typify(DataTypes.GeExp (exp_1, exp_2))(globalEnv):Sort.sort =
+    typify(DataTypes.EqExp (exp_1, exp_2)) globalEnv
 
   (* 3: running *)
   and run(parseTree:DataTypes.Prog):unit =
@@ -157,7 +229,7 @@ struct
         in
             mainReturn
         end
-        (*handle Bind => raise NonIntMainReturn*)
+        handle Bind => raise NonIntMainReturnBug
 
   and P1(DataTypes.Prog [DataTypes.DecNotFunDef (DataTypes.Dec (typeSpec, DataTypes.Id id, _))])(env,sto):environment*store =
             Dec(DataTypes.Dec (typeSpec, DataTypes.Id id, NONE))(env,sto)
@@ -197,7 +269,7 @@ struct
           (sto_1,retVal)
         end
         )
-      |   f(_) = raise TemErroNoDef
+      |   f(_) = raise DefBug
       and c(sto_cmd) = C(cmd)(e(), sto_cmd)
     in
       e()
@@ -223,7 +295,7 @@ struct
                 in
                   modifyEnv(env_2, param_dec_list_tail, tl(arr))
                 end
-            | _ => raise TemErroNoDef  
+            | _ => raise DefBug  
             )
     in
         e()
@@ -258,7 +330,7 @@ struct
       | DataTypes.CharLit charLit => (sto, ExpressibleValue.Char (let val SOME charValue = Char.fromString(charLit) in charValue end))
       | DataTypes.StringLit stringLit => (sto, ExpressibleValue.String stringLit))
 
-    |   E(DataTypes.ArrExp expList)(env, sto) =
+  |   E(DataTypes.ArrExp expList)(env, sto) =
         (case expList of
             [] => (sto, ExpressibleValue.ArrayValue [])
         |   (exp :: expListTail) =>
@@ -279,6 +351,32 @@ struct
         in
           (sto,expVal)
         end
+
+  |   E(DataTypes.IdOrArrAccessExp (DataTypes.Id id, expList)) (env, sto) =
+        let
+            val DenotableValue.Location loc = Env.apply(env, DataTypes.Id id)
+
+            fun getElementAt([], pos) = raise OutOfRangeIndex
+            |   getElementAt(arr, pos) = if pos = 0 then hd(arr) else getElementAt(tl(arr), pos-1)
+
+            fun applyArray(loc, expList, sto) =
+                (case expList of
+                    [] => (sto, Store.storableToExpressible(Store.apply(sto, loc)))
+                |   (exp :: expListTail) =>
+                        (case Store.apply(sto, loc) of
+                            StorableValue.ArrayValue arr =>
+                                (case E(exp)(env, sto) of
+                                    (sto_exp, ExpressibleValue.Int pos) =>
+                                        applyArray(getElementAt(arr, pos), expListTail, sto_exp)
+                                |   _ => raise InvalidTypeInArrayAccessIndexBug
+                                )
+                        |   _ => raise TooManyIndicesInArrayAccessBug
+                        )
+                )
+        in
+            applyArray(loc, expList, sto)
+        end
+
 
   |   E(DataTypes.AssignExp (DataTypes.Id id, [], exp)) (env,sto) =
           let
@@ -305,9 +403,9 @@ struct
                                 (case E(exp)(env, sto) of
                                     (sto_exp, ExpressibleValue.Int pos) =>
                                         updateArray(getElementAt(arr, pos), expListTail, sto_exp)
-                                |   _ => raise NotAnIntegerIndex
+                                |   _ => raise InvalidTypeInArrayAccessIndexBug
                                 )
-                        |   _ => raise NotAnArrayAcess
+                        |   _ => raise TooManyIndicesInArrayAccessBug
                         )
                 )
         in
@@ -320,15 +418,15 @@ struct
                 (case E(exp_2)(env,sto_1) of
                     (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Int (intVal_1 + intVal_2))
                 |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Real (Real.fromInt(intVal_1) + realVal_2))
-                |   _ => raise NonValidTypesOnAritmeticOperation
+                |   _ => raise InvalidTypeInArithmeticOperationBug
                 )
         |   (sto_1, ExpressibleValue.Real realVal_1) =>
                 (case E(exp_2)(env,sto_1) of
                     (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Real (realVal_1 + Real.fromInt(intVal_2)))
                 |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Real (realVal_1 + realVal_2))
-                |   _ => raise NonValidTypesOnAritmeticOperation
+                |   _ => raise InvalidTypeInArithmeticOperationBug
                 )
-            |   _ => raise NonValidTypesOnAritmeticOperation
+            |   _ => raise InvalidTypeInArithmeticOperationBug
         )
 
     |   E(DataTypes.SubExp (exp_1, exp_2)) (env,sto) =
@@ -337,15 +435,15 @@ struct
                   (case E(exp_2)(env,sto_1) of
                       (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Int (intVal_1 - intVal_2))
                   |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Real (Real.fromInt(intVal_1) - realVal_2))
-                  |   _ => raise NonValidTypesOnAritmeticOperation
+                  |   _ => raise InvalidTypeInArithmeticOperationBug
                   )
           |   (sto_1, ExpressibleValue.Real realVal_1) =>
                   (case E(exp_2)(env,sto_1) of
                       (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Real (realVal_1 - Real.fromInt(intVal_2)))
                   |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Real (realVal_1 - realVal_2))
-                  |   _ => raise NonValidTypesOnAritmeticOperation
+                  |   _ => raise InvalidTypeInArithmeticOperationBug
                   )
-          |   _ => raise NonValidTypesOnAritmeticOperation
+          |   _ => raise InvalidTypeInArithmeticOperationBug
           )
 
     |   E(DataTypes.MultExp (exp_1, exp_2)) (env,sto) =
@@ -354,15 +452,15 @@ struct
                 (case E(exp_2)(env,sto_1) of
                     (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Int (intVal_1 * intVal_2))
                 |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Real (Real.fromInt(intVal_1) * realVal_2))
-                |   _ => raise NonValidTypesOnAritmeticOperation
+                |   _ => raise InvalidTypeInArithmeticOperationBug
                 )
         |   (sto_1, ExpressibleValue.Real realVal_1) =>
                 (case E(exp_2)(env,sto_1) of
                     (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Real (realVal_1 * Real.fromInt(intVal_2)))
                 |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Real (realVal_1 * realVal_2))
-                |   _ => raise NonValidTypesOnAritmeticOperation
+                |   _ => raise InvalidTypeInArithmeticOperationBug
                 )
-        |   _ => raise NonValidTypesOnAritmeticOperation
+        |   _ => raise InvalidTypeInArithmeticOperationBug
         )
 
     |   E(DataTypes.DivExp (exp_1, exp_2)) (env,sto) =
@@ -371,22 +469,22 @@ struct
                 (case E(exp_2)(env,sto_1) of
                     (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Int (intVal_1 div intVal_2))
                 |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Real (Real.fromInt(intVal_1) / realVal_2))
-                |   _ => raise NonValidTypesOnAritmeticOperation
+                |   _ => raise InvalidTypeInArithmeticOperationBug
                 )
         |   (sto_1, ExpressibleValue.Real realVal_1) =>
                 (case E(exp_2)(env,sto_1) of
                     (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Real (realVal_1 / Real.fromInt(intVal_2)))
                 |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Real (realVal_1 / realVal_2))
-                |   _ => raise NonValidTypesOnAritmeticOperation
+                |   _ => raise InvalidTypeInArithmeticOperationBug
                 )
-            |   _ => raise NonValidTypesOnAritmeticOperation
+            |   _ => raise InvalidTypeInArithmeticOperationBug
         ) handle Div => raise DivisionByZero)
 
     |   E(DataTypes.UMinusExp exp) (env, sto) =
         (case E(exp)(env,sto) of
             (sto_f, ExpressibleValue.Int intVal) => (sto_f, ExpressibleValue.Int (~intVal))
         |   (sto_f, ExpressibleValue.Real realVal) => (sto_f, ExpressibleValue.Real (~realVal))
-        |   _ => raise NonValidTypesOnAritmeticOperation
+        |   _ => raise InvalidTypeInArithmeticOperationBug
         )
 
     |   E(DataTypes.OrExp (exp_1, exp_2)) (env, sto) =
@@ -394,9 +492,9 @@ struct
             (sto_1, ExpressibleValue.Bool boolVal_1) =>
                 (case E(exp_2)(env, sto_1) of
                     (sto_f, ExpressibleValue.Bool boolVal_2) => (sto_f, ExpressibleValue.Bool (boolVal_1 orelse boolVal_2))
-                |   _ => raise NonBooleanTypeOnLogicOperation
+                |   _ => raise InvalidTypeInLogicalOperationBug
                 )
-        |   _ => raise NonBooleanTypeOnLogicOperation
+        |   _ => raise InvalidTypeInLogicalOperationBug
         )
 
     |   E(DataTypes.AndExp (exp_1, exp_2)) (env, sto) =
@@ -404,48 +502,54 @@ struct
             (sto_1, ExpressibleValue.Bool boolVal_1) =>
                 (case E(exp_2)(env, sto_1) of
                     (sto_f, ExpressibleValue.Bool boolVal_2) => (sto_f, ExpressibleValue.Bool (boolVal_1 andalso boolVal_2))
-                |   _ => raise NonBooleanTypeOnLogicOperation
+                |   _ => raise InvalidTypeInLogicalOperationBug
                 )
-        |   _ => raise NonBooleanTypeOnLogicOperation
+        |   _ => raise InvalidTypeInLogicalOperationBug
         )
 
     |   E(DataTypes.EqExp (exp_1, exp_2)) (env, sto) =
+        (*let
+          val (sto_1, expVal_1) = E(exp_1)(env,sto)
+          val (sto_f, expVal_2) = E(exp_2)(env,sto_1)
+        in
+          
+        end*)
         (case E(exp_1)(env,sto) of
-            (sto_1, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+            (sto_1, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
         |   (sto_1, ExpressibleValue.Int intVal_1) =>
                 (case E(exp_2)(env,sto_1) of
-                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                    (sto_f, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
                 |   (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (intVal_1 = intVal_2))
                 |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (Real.==(Real.fromInt(intVal_1), realVal_2)))
-                |   _ => raise NonCorrespondingTypesInComparison
+                |   _ => raise IncomparableTypesBug
                 )
         |   (sto_1, ExpressibleValue.Real realVal_1) =>
                 (case E(exp_2)(env,sto_1) of
-                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                    (sto_f, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
                 |   (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (Real.==(realVal_1, Real.fromInt(intVal_2))))
                 |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (Real.==(realVal_1, realVal_2)))
-                |   _ => raise NonCorrespondingTypesInComparison
+                |   _ => raise IncomparableTypesBug
                 )
         |   (sto_1, ExpressibleValue.Bool boolVal_1) =>
                 (case E(exp_2)(env,sto_1) of
-                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                    (sto_f, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
                 |   (sto_f, ExpressibleValue.Bool boolVal_2) => (sto_f, ExpressibleValue.Bool (boolVal_1 = boolVal_2))
-                |   _ => raise NonCorrespondingTypesInComparison
+                |   _ => raise IncomparableTypesBug
                 )
         |   (sto_1, ExpressibleValue.Char charVal_1) =>
                 (case E(exp_2)(env, sto_1) of
-                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                    (sto_f, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
                 |   (sto_f, ExpressibleValue.Char charVal_2) => (sto_f, ExpressibleValue.Bool (charVal_1 = charVal_2))
-                |   _ => raise NonCorrespondingTypesInComparison
+                |   _ => raise IncomparableTypesBug
                 )
         |   (sto_1, ExpressibleValue.String stringVal_1) =>
                 (case E(exp_2)(env,sto_1) of
-                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                    (sto_f, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
                 |   (sto_f, ExpressibleValue.String stringVal_2) => (sto_f, ExpressibleValue.Bool (stringVal_1 = stringVal_2))
-                |   _ => raise NonCorrespondingTypesInComparison
+                |   _ => raise IncomparableTypesBug
                 )
         (*TODO: comparações entre datasets, models e arrays?*)
-        |   _ => raise NonComparableTypes
+        |   _ => raise InvalidTypeInComparisonBug
         )
 
     |   E(DataTypes.NeExp (exp_1, exp_2)) (env, sto) =
@@ -457,42 +561,42 @@ struct
 
     |   E(DataTypes.LtExp (exp_1, exp_2)) (env, sto) =
         (case E(exp_1)(env,sto) of
-            (sto_1, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+            (sto_1, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
         |   (sto_1, ExpressibleValue.Int intVal_1) =>
                 (case E(exp_2)(env,sto_1) of
-                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                    (sto_f, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
                 |   (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (intVal_1 < intVal_2))
                 |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (Real.fromInt(intVal_1) < realVal_2))
-                |   _ => raise NonComparableTypes
+                |   _ => raise InvalidTypeInComparisonBug
                 )
         |   (sto_1, ExpressibleValue.Real realVal_1) =>
                 (case E(exp_2)(env,sto_1) of
-                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                    (sto_f, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
                 |   (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (realVal_1 < Real.fromInt(intVal_2)))
                 |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (realVal_1 < realVal_2))
-                |   _ => raise NonComparableTypes
+                |   _ => raise InvalidTypeInComparisonBug
                 )
-        |   _ => raise NonComparableTypes
+        |   _ => raise InvalidTypeInComparisonBug
         )
 
     |   E(DataTypes.LeExp (exp_1, exp_2)) (env, sto) =
         (case E(exp_1)(env,sto) of
-            (sto_1, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+            (sto_1, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
         |   (sto_1, ExpressibleValue.Int intVal_1) =>
                 (case E(exp_2)(env,sto_1) of
-                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                    (sto_f, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
                 |   (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (intVal_1 <= intVal_2))
                 |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (Real.fromInt(intVal_1) <= realVal_2))
-                |   _ => raise NonComparableTypes
+                |   _ => raise InvalidTypeInComparisonBug
                 )
         |   (sto_1, ExpressibleValue.Real realVal_1) =>
                 (case E(exp_2)(env,sto_1) of
-                    (sto_f, ExpressibleValue.VoidValue) => raise VoidValueInComparison
+                    (sto_f, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
                 |   (sto_f, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (realVal_1 <= Real.fromInt(intVal_2)))
                 |   (sto_f, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (realVal_1 <= realVal_2))
-                |   _ => raise NonComparableTypes
+                |   _ => raise InvalidTypeInComparisonBug
                 )
-        |   _ => raise NonComparableTypes
+        |   _ => raise InvalidTypeInComparisonBug
         )
 
     |   E(DataTypes.GtExp (exp_1, exp_2)) (env, sto) =
@@ -512,41 +616,17 @@ struct
     |   E(DataTypes.NegExp exp) (env, sto) =
         (case E(exp)(env, sto) of
             (sto_f, ExpressibleValue.Bool boolVal) => (sto_f, ExpressibleValue.Bool (not(boolVal)))
-        |   _ => raise NonBooleanTypeOnLogicOperation)
+        |   _ => raise InvalidTypeInLogicalOperationBug)
 
     |   E(DataTypes.ParenExp exp) (env, sto) = E(exp)(env, sto)
 
 
-    |   E(DataTypes.IdOrArrAccessExp (DataTypes.Id id, expList)) (env, sto) =
-        let
-            val DenotableValue.Location loc = Env.apply(env, DataTypes.Id id)
-
-            fun getElementAt([], pos) = raise OutOfRangeIndex
-            |   getElementAt(arr, pos) = if pos = 0 then hd(arr) else getElementAt(tl(arr), pos-1)
-
-            fun applyArray(loc, expList, sto) =
-                (case expList of
-                    [] => (sto, Store.storableToExpressible(Store.apply(sto, loc)))
-                |   (exp :: expListTail) =>
-                        (case Store.apply(sto, loc) of
-                            StorableValue.ArrayValue arr =>
-                                (case E(exp)(env, sto) of
-                                    (sto_exp, ExpressibleValue.Int pos) =>
-                                        applyArray(getElementAt(arr, pos), expListTail, sto_exp)
-                                |   _ => raise NotAnIntegerIndex
-                                )
-                        |   _ => raise NotAnArrayAcess
-                        )
-                )
-        in
-            applyArray(loc, expList, sto)
-        end
-
+    
 
   |   E(DataTypes.AppExp (DataTypes.Id id, [])) (env,sto) =
         let
           val DenotableValue.Function f = Env.apply(env, DataTypes.Id id)
-          handle Bind => raise IdentifierNotAFunction
+          handle Bind => raise NonFunctionApplicationBug
           val (sto_f,retVal) = f([], sto)
 
           (*val ExpressibleValue.Int intRetVal = retVal
@@ -558,7 +638,7 @@ struct
     |   E(DataTypes.AppExp (DataTypes.Id id, expList)) (env, sto) =
         let
             val DenotableValue.Function f = Env.apply(env, DataTypes.Id id)
-            handle Bind => raise IdentifierNotAFunction
+            handle Bind => raise NonFunctionApplicationBug
 
             fun locations(expList, sto) =
                 (case expList of
@@ -649,7 +729,7 @@ struct
                                 end
                             else
                                 (sto_exp, false, ExpressibleValue.VoidValue)
-                    |   _ => raise NonBooleanTypeOnLogicOperation
+                    |   _ => raise InvalidTypeInLogicalOperationBug
                     )
         in
             loop(sto, false, ExpressibleValue.VoidValue)
