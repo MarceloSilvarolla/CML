@@ -1,6 +1,7 @@
 structure CML :
 sig val parse : string -> DataTypes.Prog
     val run : DataTypes.Prog -> unit
+    val typeCheck : DataTypes.Prog -> unit
     val interpret : string -> unit
 end =
 struct
@@ -11,7 +12,7 @@ struct
   type returnValue = ExpressibleValue.expressibleValue
   type returnFlag = ReturnFlag.returnFlag
 
-  exception CMLError
+  exception ParseError
   exception EmptyProgram
   exception IdentifierNotAFunction
   exception NonIntMainReturn
@@ -26,7 +27,11 @@ struct
   exception NotAnIntegerIndex
   exception OutOfRangeIndex
   exception TemErroNoDef
-
+  exception InconsistentSortsOfArrayElements
+  exception OrOfNonBooleanExpressions
+  exception AndOfNonBooleanExpressions
+  exception NegOfNonBooleanExpression
+  (* 1: parsing (using MLLex and MLYacc) *)
   fun parse (fileName:string):DataTypes.Prog =
   let val inStream = TextIO.openIn fileName;
     val grab : int -> string = fn
@@ -35,22 +40,110 @@ struct
              else TextIO.inputN (inStream,n);
     val printError : string * int * int -> unit = fn
         (msg,line,col) =>
-         print(fileName^"["^Int.toString line^":"
-               ^Int.toString col^"] "^msg^"\n");
+         (print("Parse error!\n" ^ fileName ^ "["^Int.toString line^":"
+               ^Int.toString col^"] "^msg^"\n"); raise ParseError)
     val _ = Compiler.Control.Print.printDepth:=50;
     val (tree, rem) = CMLParser.parse
           (15,
           (CMLParser.makeLexer grab fileName),
           printError,
           fileName)
-      handle CMLParser.ParseError => raise CMLError;
+      handle CMLParser.ParseError => raise ParseError
     val _ = TextIO.closeIn inStream;
   in tree
   end
+  (* 2: type-checking *)
+  and typeCheck(parseTree:DataTypes.Prog):LocalTypeEnv.environment * GlobalTypeEnv.environment =
+    typeCheckP(parseTree)(emptyEnv)
+  
+  and typeCheckP(prog):LocalTypeEnv.environment * GlobalTypeEnv.environment =
+    let 
+      val (localFuncTypeEnv, globalFuncTypeEnv) = typeCheckP1(prog)(LocalTypeEnv.emptyEnv, GlobalTypeEnv.emptyEnv)
+      val (finalLocalTypeEnv, finalGlobalTypeEnv) = typeCheckP2(prog)(localfuncTypeEnv, globalFuncTypeEnv)
+    in
+      (finalLocalTypeEnv, finalGlobalTypeEnv)
+    end
+  (* 2.1: type-checking function definitions and adding them to the type environment *)
+  and typeCheckP1([])(localEnv, globalEnv) = (localEnv, globalEnv)
+  and typeCheckP1((DataTypes.FunDefNotDec (DataTypes.FunDef (typeSpec, DataTypes.Id id, params, cmd))) :: progTail)(localEnv, globalEnv) =
+    let 
+      val returnSort = Sort.typeSpecSort(typeSpec)
+      val inputSort = Sort.Product (map
+        (fn (typeSpec, _, _) => Sort.typeSpecSort(typeSpec))
+        params)
+      val functionSort = Sort.To (inputSort, returnSort)
+      val newLocalEnv = LocalTypeEnv.extend(localEnv, DataTypes.Id id, functionSort)
+      val newGlobalEnv = GlobalTypeEnv.extend(globalEnv, DataTypes.Id id, functionSort)
+    in
+      typeCheckP1(progTail)(newLocalEnv, newGlobalEnv)
+    end 
+  and typeCheckP1(_:: progTail)(localEnv, globalEnv) = typeCheckP1(progTail)
+  (* 2.2: type-checking everything using function types from step 2.1 *) 
+  and typeCheckP2([])(localEnv, globalEnv) = (localEnv, globalEnv)
+  and typeCheckP2( (DataTypes.DecNotFunDef dec) :: progTail)(localEnv, globalEnv) =
+    let
+      val (newLocalEnv, newGlobalEnv) = typeCheckDec(dec)(localEnv, globalEnv)
+    in
+      typeCheckP2(progTail)(newLocalEnv, newGlobalEnv) 
+    end
+  and typeCheckP2( (DataTypes.FunDefNotDec funDef) :: progTail)(localEnv, globalEnv) = 
+    let
+      val (newLocalEnv, newGlobalEnv) = typeCheckDef(funDef)(localEnv, globalEnv)
+    in
+      typeCheckP2(progTail)(newLocalEnv, newGlobalEnv)
+    end
+  and typeCheckDec(DataTypes.Dec (typeSpec, DataTypes.Id id, NONE)(localEnv, globalEnv) =
+    let
+      val newLocalEnv = LocalTypeEnv.extend(localEnv, DataTypes.Id id, Sort.typeSpecSort(typeSpec))
+      val newGlobalEnv =  GlobalTypeEnv.extend(globalEnv, DataTypes.Id id, Sort.typeSpecSort(typeSpec))
+    in
+      (newLocalEnv, newGlobalEnv)
+    end
+  and typeCheckDec(DataTypes.Dec (typeSpec, DataTypes.Id id, SOME exp)(localEnv, globalEnv) =
+    
+  and typify(DataTypes.LitExp litExp)(globalEnv):Sort.sort  =
+    (case litExp of
+      DataTypes.IntLit intLit = Sort.Int
+    | DataTypes.RealLit realLit = Sort.Real
+    | DataTypes.BoolLit realLit = Sort.Bool
+    | DataTypes.CharLit realLit = Sort.Char
+    | DataTypes.StringLit realLit = Sort.String
+    )
+  and typify(DataTypes.ArrExp arrExp)(globalEnv):Sort.sort = 
+   let 
+     val expSorts = map (fn exp => typify(exp)(globalEnv)) arrExp
+   in
+     Sort.Array commonSort(expSorts)
+   end
+   handle Sort.InconsistentSorts => raise InconsistentSortsOfArrayElements
+  and typify(DataTypes.OrExp (exp_1, exp_2))(globalEnv):Sort.sort =
+    let 
+      val sort_1 = typify(exp_1) 
+      val sort_2 = typify(exp_2)
+      val _ = if commonSort(sort_1, sort_2) = Sort.Bool 
+              then () 
+              else raise OrOfNonBooleanExpressions
+      handle Sort.InconsistentSorts => raise OrOfNonBooleanExpressions
+    in
+      Sort.Bool
+
+   and typify(DataTypes.AndExp (exp_1, exp_2))(globalEnv):Sort.sort
+    let 
+      val sort_1 = typify(exp_1) 
+      val sort_2 = typify(exp_2)
+      val _ = if commonSort(sort_1, sort_2) = Sort.Bool 
+              then () 
+              else raise AndOfNonBooleanExpressions
+      handle Sort.InconsistentSorts => raise AndOfNonBooleanExpressions
+    in
+      Sort.Bool
+
+  (* 3: running *)
   and run(parseTree:DataTypes.Prog):unit =
     let val _ = P(parseTree)
     in ()
     end
+
   and P(parseTree:DataTypes.Prog):int =
         let
             val (env_1, sto_1) = P1(parseTree)(Env.empty, Store.empty)
@@ -77,7 +170,7 @@ struct
       | P1(DataTypes.Prog (decOrFunDef::decOrFunDefList))(env,sto):environment*store =
             P1(DataTypes.Prog decOrFunDefList)( P1(DataTypes.Prog [decOrFunDef])(env,sto) )
 
-      | P1(DataTypes.Prog []) (env,sto) = raise EmptyProgram
+      | P1(DataTypes.Prog []) (env,sto) = (env,sto)
 
   and P2(prog:DataTypes.Prog)(env,sto):environment*store =
             P1(prog)(env,sto)
@@ -93,7 +186,7 @@ struct
             end
       | P3(DataTypes.Prog (decOrFunDef::decOrFunDefList))(env,sto):environment*store =
             P3(DataTypes.Prog decOrFunDefList)(P3(DataTypes.Prog [decOrFunDef])(env,sto))
-      | P3(DataTypes.Prog []) (env,sto) = raise EmptyProgram
+      | P3(DataTypes.Prog []) (env,sto) = (env,sto)
   and Def(DataTypes.FunDef (typeSpec, DataTypes.Id id, [], cmd))(env, sto):environment =
     let
       fun e() = Env.extend(env, DataTypes.Id id, DenotableValue.Function f)
@@ -565,9 +658,13 @@ struct
 
   |   C(DataTypes.Skip)(env,sto) = (sto, false, ExpressibleValue.VoidValue)
 
+  (* Part 4: putting everything together (i.e., interpreting) *)
   and interpret(fileName:string):unit =
-        let val parseTree = parse(fileName)
+        let
+          val parseTree = parse(fileName)
+          (*val _ = typeCheck(parseTree)*)
         in run(parseTree)
         end
+        handle ParseError => ()
 
 end
