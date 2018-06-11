@@ -140,6 +140,26 @@ struct
   type denotableValue = DenotableValue.denotableValue
   type environment = Id -> denotableValue
   fun empty(id) = DenotableValue.Unbound
+  fun initial(DataTypes.Id id) = (
+      case id of
+	  "load_data" => DenotableValue.Function LearningLib.load_data
+       |  "save_data" => DenotableValue.Function LearningLib.save_data
+       |  "columns" => DenotableValue.Function LearningLib.remove_columns
+       | "remove_columns"  => DenotableValue.Function LearningLib.remove_columns
+       | "rows" => DenotableValue.Function LearningLib.rows
+       | "num_rows" => DenotableValue.Function LearningLib.num_rows
+					       
+       | "perceptron" => DenotableValue.Function LearningLib.perceptron
+       | "pocket_perceptron" => DenotableValue.Function LearningLib.pocket_perceptron
+       | "logistic_regression" => DenotableValue.Function LearnignLib.logistic_regression
+       | "linear_regression" => DenotableValue.Function LearningLib.linear_regression
+
+       | "predict" => DenotableValue.Function LearningLib.predict
+       | "load_model" => DenotableValue.Function LearningLib.load_model
+       | "save_model" => DenotableValue.Function LearningLib.save_model
+
+       | _ => empty(id)
+  )
 
   fun extend(env:environment,DataTypes.Id
     id:DataTypes.Id,denVal:denotableValue)(DataTypes.Id id1:DataTypes.Id):denotableValue =

@@ -10,7 +10,7 @@ struct
   val perceptron = Model.perceptron
   val pocket_perceptron = Model.pocket_perceptron
   val logistic_regression = Model.logistic_regression
-  (*val linear_regression = Model.linear_regression*)
+  val linear_regression = Model.linear_regression
 
   val predict = Model.predict
 
