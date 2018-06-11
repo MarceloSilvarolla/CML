@@ -35,7 +35,8 @@ struct
   exception ArrayElementsOfInconsistentTypes
   (* 1: parsing (using MLLex and MLYacc) *)
   fun parse (fileName:string):DataTypes.Prog =
-  let val inStream = TextIO.openIn fileName;
+  let 
+    val inStream = TextIO.openIn fileName
     val grab : int -> string = fn
         n => if TextIO.endOfStream inStream
              then ""
@@ -50,7 +51,7 @@ struct
           (CMLParser.makeLexer grab fileName),
           printError,
           fileName)
-      handle CMLParser.ParseError => raise ParseError
+      (*handle CMLParser.ParseError => raise ParseError*)
     val _ = TextIO.closeIn inStream;
   in tree
   end

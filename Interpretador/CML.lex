@@ -13,7 +13,7 @@ val eolpos = ref 0;
 
 val badCh : string * string * int * int -> unit = fn
     (fileName, bad, line, col) =>
-    TextIO.output(TextIO.stdOut,fileName^"["
+    TextIO.output(TextIO.stdOut,fileName^"[aee"
     ^Int.toString line^"."^Int.toString col
     ^"] Invalid character \""^bad^"\"\n");
 val eof = fn fileName => T.EOF(!lin,!col);
@@ -71,12 +71,15 @@ D = [0-9];
 L = [a-zA-Z_];
 A = [a-zA-Z_0-9];
 ES = \\[\'\"\\nt];
-WS = [\ \t\n];
+WS = [\ \t];
 EOL = ("\013\010" | "\010" | "\013");
 %%
 
 <INITIAL>{WS}* => (lin:=1;eolpos:=0;YYBEGIN CML; continue());
-{EOL} => (lin:=(!lin)+1;eolpos:=yypos+size yytext;continue());
+<CML>{WS}* => (continue());
+<CML>{EOL} => ( lin:=(!lin)+1;eolpos:=yypos+size yytext; 
+                        print( "EOL(yypos=" ^ Int.toString(yypos) ^ ", lin=" ^ Int.toString(!lin) ^ 
+                         ", eolpos=" ^ Int.toString(!eolpos) ^ ") " ); continue());
 
 <CML>"/*" => ( YYBEGIN COMMENT; continue() );
 <CML>"//".* => ( continue() );
@@ -112,8 +115,7 @@ EOL = ("\013\010" | "\010" | "\013");
                                                v(!lin,!col))
                  | _ => (col:=yypos-(!eolpos);
                          T.IDENTIFIER(yytext,!lin,!col)));
-<CML>{WS}* => (continue());
-<CML> . => (continue());
+<CML> . => (col:=yypos-(!eolpos); badCh(fileName,yytext,!lin,!col); T.BOGUS_SYMBOL(!lin,!col));
 
 <COMMENT>"*/" => ( YYBEGIN CML; continue());
 <COMMENT> . => (continue());

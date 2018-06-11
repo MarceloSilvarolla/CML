@@ -3,7 +3,7 @@ open DataTypes
 %%
 
 %name CML
-%term EOF 
+%term EOF | BOGUS_SYMBOL
  | IF | ELSE | WHILE | RETURN | SKIP 
  | VOID | INT | REAL | CHAR | BOOL | STRING | DATASET | MODEL
  | IDENTIFIER of string
