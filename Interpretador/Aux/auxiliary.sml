@@ -144,8 +144,6 @@ struct
   fun extend(env:environment,DataTypes.Id
     id:DataTypes.Id,denVal:denotableValue)(DataTypes.Id id1:DataTypes.Id):denotableValue =
       if id1 = id then denVal else env(DataTypes.Id id1)
-
-  fun apply(env:environment, DataTypes.Id id:DataTypes.Id):denotableValue =
     env(DataTypes.Id id)
   
   fun toStringAt(env, DataTypes.Id id):string =
@@ -170,4 +168,86 @@ struct
   fun printEnv(env):unit = 
     (print(toString(env)); print("\n"))
 end
+
+structure Sort =
+struct
+  exception UnboundBug
+  exception IncorrectNumberOfArguments
+  datatype sort = Int | Real | Char | Bool | String | Dataset | Model | Array of sort | 
+    Product of sort list | To of sort * sort | Void | Any | Unbound 
+  fun typeSpecSort(typeSpec:DataTypes.typeSpec):Sort.sort =
+    (case typeSpec of
+      DataTypes.Void => Sort.Void
+    | DataTypes.Int => Sort.Int
+    | DataTypes.Real => Sort.Real
+    | DataTypes.Bool => Sort.Bool
+    | DataTypes.Char => Sort.Char
+    | DataTypes.String => Sort.String
+    | DataTypes.Dataset => Sort.Dataset
+    | DataTypes.Model => Sort.Model
+    | DataTypes.Array typeSpec_1 => Sort.Array (typeSpecSort(typeSpec_1))
+    )
+
+  fun commonSort(srt_1, srt_2):Sort.sort =
+    (case (srt_1,srt_2) of
+      (Any, srt) => srt
+    | (srt, Any) => srt
+    | (Int, Int) => Int
+    | (Real, Real) => Real
+    | (Char, Char) => Char
+    | (Bool, Bool) => Bool
+    | (String, String) => String
+    | (Dataset, Dataset) => Dataset
+    | (Model, Model) => Model
+    | (Array srt_1_1, Array srt_2_1) => commonSort(srt_1_1, srt_2_1)
+    | (Product srt_1_1, Product srt_2_1) => 
+      let 
+        val (srtPairs, srt_2_1_rest) = foldl 
+         (fn 
+           (srtFrom_srt_1_1, (result, srtFrom_srt_2_1::srt_2_1_tail)) => (result::(srtFrom_srt_1_1, srtFrom_srt_2_1), srt_2_1_tail)
+         | (result, []) => raise IncorrectNumberOfArguments)
+         ([], srt_2_1)
+         srt_1_1
+        val _ = if srt_2_1_rest = [] then () else raise IncorrectNumberOfArguments
+      in
+        Product (map commonSort srtPairs)
+      end
+    | (To (srt_1_1, srt_1_2), To (srt_2_1, srt_2_2))  =>
+      (To commonSort(srt_1_1, srt_2_1) commonSort(srt_1_2, srt_2_2))
+    | (Void, Void) => Void
+    | (Unbound,_) => raise UnboundBug
+    | (_,Unbound) => raise UnboundBug
+    | _ => raise InconsistentSorts
+    )
+
+  fun commonSortList(sorts):Sort.sort =
+    foldl (fn (srt, accSrt) => commonSort(srt, accSrt)) Any sorts 
+  
+end
+
+structure LocalTypeEnv =
+struct
+  exception MultipleLocalDeclarations
+  type environment = DataTypes.Id -> Sort.sort 
+  fun empty(_) = Unbound
+  fun extend(env,DataTypes.Id id, srt):environment =
+    case env(DataTypes.Id id) of
+      Unbound => (fn id1 => (if id1 == id then srt else env(DataTypes.Id id1)))
+    | _ => raise MultipleLocalDeclarations
+  fun apply(env,DataTypes.Id id):Sort.sort =
+    env(DataTypes.Id id)
+  
+end
+
+structure GlobalTypeEnv =
+struct
+  type environment = DataTypes.Id -> Sort.sort 
+  fun empty(_) = Unbound
+  fun extend(env,DataTypes.Id id, srt):environment =
+    (fn id1 => (if id1 == id then srt else env(DataTypes.Id id1)))
+  fun apply(env,DataTypes.Id id):Sort.sort =
+    env(DataTypes.Id id)
+end
+
+
 

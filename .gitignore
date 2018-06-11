@@ -2,6 +2,7 @@
 *.un~*
 *~
 *.swp
+*.swo
 **/OutrasCoisas
 **/.cm
 Interpretador/CML.lex.sm
