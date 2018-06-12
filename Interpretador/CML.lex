@@ -20,45 +20,27 @@ val eof = fn fileName => T.EOF(!lin,!col);
 
 structure KeyWord :
 sig val find : string ->
-                (int * int -> (svalue,int) token) option
+               (int * int -> (svalue,int) token) option
 end =
 struct
- val TableSize = 422
- val HashFactor = 5
- val hash = fn
-     s => List.foldr (fn (c,v) =>
-           (v*HashFactor+(ord c)) mod TableSize) 0 (explode s)
- val HashTable = Array.array(TableSize,nil) :
-              (string * (int * int -> (svalue,int) token))
-              list Array.array
- val add = fn
-      (s,v) => let val i = hash s
-               in Array.update(HashTable,i,(s,v)
-                  :: (Array.sub(HashTable,i)))
-               end
- val find = fn
-     s => let val i = hash s
-              fun f ((key,v)::r) = if s=key then SOME v
-                                            else f r
-                | f nil = NONE
-          in f (Array.sub(HashTable,i))
-          end
- val _ = (List.app add [
-         ("if", T.IF),
-         ("else", T.ELSE),
-         ("while", T.WHILE),
-         ("return", T.RETURN),
-         ("skip", T.SKIP),
-         ("void", T.VOID),
-         ("int", T.INT),
-         ("real", T.REAL),
-         ("char", T.CHAR),
-         ("bool", T.BOOL),
-         ("string", T.STRING),
-         ("dataset", T.DATASET),
-         ("model", T.MODEL)
-       ])
-end;
+  fun find(s) = 
+    (case s of
+     "if" => SOME T.IF
+    | "else" => SOME T.ELSE
+    | "while" => SOME T.WHILE
+    | "return" => SOME T.RETURN
+    | "skip" => SOME T.SKIP
+    | "void" => SOME T.VOID
+    | "int" => SOME T.INT
+    | "real" => SOME T.REAL
+    | "char" => SOME T.CHAR
+    | "bool" => SOME T.BOOL
+    | "string" => SOME T.STRING
+    | "dataset" => SOME T.DATASET
+    | "model" => SOME T.MODEL
+    | _ => NONE
+    )
+end
 
 open KeyWord;
 
@@ -78,8 +60,11 @@ EOL = ("\013\010" | "\010" | "\013");
 <INITIAL>{WS}* => (lin:=1;eolpos:=0;YYBEGIN CML; continue());
 <CML>{WS}* => (continue());
 <CML>{EOL} => ( lin:=(!lin)+1;eolpos:=yypos+size yytext; 
-                        print( "EOL(yypos=" ^ Int.toString(yypos) ^ ", lin=" ^ Int.toString(!lin) ^ 
-                         ", eolpos=" ^ Int.toString(!eolpos) ^ ") " ); continue());
+                        (*print( "EOL(yypos=" ^ Int.toString(yypos) ^ ", lin=" ^ Int.toString(!lin) ^ 
+                         ", eolpos=" ^ Int.toString(!eolpos) ^ ") " );*) continue());
+<COMMENT>{EOL} => ( lin:=(!lin)+1;eolpos:=yypos+size yytext; 
+                        (*print( "EOL(yypos=" ^ Int.toString(yypos) ^ ", lin=" ^ Int.toString(!lin) ^ 
+                         ", eolpos=" ^ Int.toString(!eolpos) ^ ") " );*) continue());
 
 <CML>"/*" => ( YYBEGIN COMMENT; continue() );
 <CML>"//".* => ( continue() );
@@ -106,27 +91,17 @@ EOL = ("\013\010" | "\010" | "\013");
 <CML>")" => (col:=yypos-(!eolpos); T.RPAREN(!lin,!col));
 <CML>";" => (col:=yypos-(!eolpos); T.SEMICOLON(!lin,!col));
 <CML>"," => (col:=yypos-(!eolpos); T.COMMA(!lin,!col));
-<CML>"=" => (col:=yypos-(!eolpos); T.EQUALS(!lin,!col));
+<CML>"=" => (col:=yypos-(!eolpos); (*print("=(" ^ Int.toString(!lin) ^ ", " ^ Int.toString(!col) ^  ", " ^ Int.toString(yypos) ^ ") "   );*) T.EQUALS(!lin,!col));
 <CML>"+" => (col:=yypos-(!eolpos); T.PLUS(!lin,!col));
 <CML>"-" => (col:=yypos-(!eolpos); T.MINUS(!lin,!col));
 <CML>"*" => (col:=yypos-(!eolpos); T.TIMES(!lin,!col));
 <CML>"/" => (col:=yypos-(!eolpos); T.DIVIDED(!lin,!col));
-<CML>{L}{A}* => (case find yytext of SOME v => (col:=yypos-(!eolpos);
+<CML>{L}{A}* => (case find yytext of 
+                  SOME v => (col:=yypos-(!eolpos);
                                                v(!lin,!col))
                  | _ => (col:=yypos-(!eolpos);
-                         T.IDENTIFIER(yytext,!lin,!col)));
+                         T.IDENTIFIER(yytext, !lin,!col)));
 <CML> . => (col:=yypos-(!eolpos); badCh(fileName,yytext,!lin,!col); T.BOGUS_SYMBOL(!lin,!col));
 
 <COMMENT>"*/" => ( YYBEGIN CML; continue());
-<COMMENT>{EOL} => ( lin:=(!lin)+1;eolpos:=yypos+size yytext; 
-                        print( "EOL(yypos=" ^ Int.toString(yypos) ^ ", lin=" ^ Int.toString(!lin) ^ 
-                         ", eolpos=" ^ Int.toString(!eolpos) ^ ") " ); continue());
-
 <COMMENT> . => (continue());
-
-
-
-
-
-
-

@@ -11,19 +11,19 @@ dataset getRelevantMovies(dataset movies){
 
 int main() {
    string file_name = "movies.csv";
-   dataset movies = load_data(file_name);
+   dataset movies = load_data(file_name, ',');
    dataset top_movies = getRelevantMovies(movies);
-   dataset X = remove_cols(top_movies, {"hasWonOscar"});
-   dataset y = cols(top_movies, {"hasWonOscar"});
+   dataset X = remove_columns(top_movies, {"hasWonOscar"});
+   dataset y = columns(top_movies, {"hasWonOscar"});
    model classifier = perceptron(X, y, 2000);
    
    dataset unclassified_movies =
-			load_data("moviesRevenue.csv");
+			load_data("movies.csv", ',');
    dataset prediction =
-			predict(classifier, unclassified_movies);
+			predict(X, classifier);
 
 
-   save_data(prediction, "oscarFavourites.csv");
+   save_data(prediction, "oscarFavourites.csv", ',');
    return 0;
 }
 

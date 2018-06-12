@@ -16,7 +16,6 @@ struct
   exception NonFunctionApplication
   exception NonFunctionApplicationBug
   exception NonIntMainReturn
-  exception NonIntMainReturnBug
   exception InvalidTypeInArithmeticOperation
   exception InvalidTypeInArithmeticOperationBug
   exception DivisionByZero
@@ -118,9 +117,14 @@ struct
     in
       (newLocalEnv, newGlobalEnv)
     end
-
-  and typeCheckDef(DataTypes.FunDef (typeSpec, _, _, cmd)) (localEnv, globalEnv) =
-    typeCheckC(cmd)(localEnv, globalEnv)(Sort.typeSpecSort(typeSpec))
+  and  typeCheckDecList(decList)(localEnv, globalEnv) =
+    foldl (fn (dec, (localEnv, globalEnv)) => typeCheckDec(dec)(localEnv, globalEnv)) (localEnv, globalEnv) decList
+  and typeCheckDef(DataTypes.FunDef (typeSpec, _, params, cmd)) (localEnv, globalEnv) =
+    let 
+      val (newLocalEnv, newGlobalEnv) = typeCheckDecList(params)(localEnv, globalEnv)
+    in
+      typeCheckC(cmd)(newLocalEnv, newGlobalEnv)(Sort.typeSpecSort(typeSpec))
+    end
 
   and typeCheckDecOrCmd(DataTypes.DecNotCmd dec)(localEnv, globalEnv) (returnSrt) = typeCheckDec(dec) (localEnv, globalEnv)
   |   typeCheckDecOrCmd(DataTypes.CmdNotDec cmd)(localEnv, globalEnv) (returnSrt) = typeCheckC(cmd)(localEnv, globalEnv)(returnSrt)
@@ -414,9 +418,9 @@ struct
             val _ = print("Vou executar o main!\n")
             val (sto_f, ExpressibleValue.Int mainReturn) = E(DataTypes.AppExp (DataTypes.Id "main", []))(env_f, sto_3)
         in
-            mainReturn
+            (print("...Program finished with exit code " ^ Int.toString(mainReturn) ^ "\n");mainReturn)
         end
-        handle Bind => raise NonIntMainReturnBug
+        handle Bind => raise NonIntMainReturn
 
   and P1(DataTypes.Prog [DataTypes.DecNotFunDef (DataTypes.Dec (typeSpec, DataTypes.Id id, _))])(env,sto):environment*store =
             Dec(DataTypes.Dec (typeSpec, DataTypes.Id id, NONE))(env,sto)

@@ -137,11 +137,14 @@ end
 
 structure LearningAuxBridge =
 struct
+    exception InvalidLearningArgumentBug 
     fun load_data([filename_loc, separator_loc], sto) =
         (case (Store.apply(sto, filename_loc), Store.apply(sto, separator_loc)) of
-            (StorableValue.String filename, StorableValue.Char separator) =>
-                (sto, ExpressibleValue.Dataset (Learning.load_data(filename, separator)))
+          (StorableValue.String filename, StorableValue.Char separator) =>
+            (sto, ExpressibleValue.Dataset (Learning.load_data(filename, separator)))
+        | _ => raise InvalidLearningArgumentBug 
         )
+    |   load_data(_) = raise InvalidLearningArgumentBug 
 
     fun save_data([dataset_loc, filename_loc, separator_loc], sto) =
         (case (Store.apply(sto, dataset_loc), Store.apply(sto, filename_loc), Store.apply(sto, separator_loc)) of
@@ -151,7 +154,9 @@ struct
                 in
                     (sto, ExpressibleValue.VoidValue)
                 end
+        | _ => raise InvalidLearningArgumentBug 
         )
+    |   save_data(_) = raise InvalidLearningArgumentBug 
 
     fun get_columns_from_store(location_list, sto) =
         if length(location_list) = 0 then
@@ -159,42 +164,55 @@ struct
         else
             (case Store.apply(sto, hd(location_list)) of
                 StorableValue.String col => col :: get_columns_from_store(tl(location_list), sto)
+            | _ => raise InvalidLearningArgumentBug 
             )
 
     fun columns([dataset_loc, columns_loc], sto) =
         (case (Store.apply(sto, dataset_loc), Store.apply(sto, columns_loc)) of
             (StorableValue.Dataset dataset, StorableValue.ArrayValue location_list) =>
                 (sto, ExpressibleValue.Dataset (Learning.columns(dataset, get_columns_from_store(location_list, sto))))
+        | _ => raise InvalidLearningArgumentBug 
         )
+    |   columns(_) = raise InvalidLearningArgumentBug 
 
     fun remove_columns([dataset_loc, columns_loc], sto) =
         (case (Store.apply(sto, dataset_loc), Store.apply(sto, columns_loc)) of
             (StorableValue.Dataset dataset, StorableValue.ArrayValue location_list) =>
                 (sto, ExpressibleValue.Dataset (Learning.remove_columns(dataset, get_columns_from_store(location_list, sto))))
+        | _ => raise InvalidLearningArgumentBug 
         )
+    |   remove_columns(_) = raise InvalidLearningArgumentBug 
 
     fun rows([dataset_loc, first_loc, qt_loc], sto) =
         (case (Store.apply(sto, dataset_loc), Store.apply(sto, first_loc), Store.apply(sto, qt_loc)) of
             (StorableValue.Dataset dataset, StorableValue.Int first, StorableValue.Int qt) =>
                 (sto, ExpressibleValue.Dataset (Learning.rows(dataset, first, qt)))
+        | _ => raise InvalidLearningArgumentBug 
         )
+    |   rows(_) = raise InvalidLearningArgumentBug 
 
     fun num_rows([dataset_loc], sto) =
         (case Store.apply(sto, dataset_loc) of
             StorableValue.Dataset dataset => (sto, ExpressibleValue.Int (Learning.num_rows(dataset)))
+        | _ => raise InvalidLearningArgumentBug 
         )
+    |   num_rows(_) = raise InvalidLearningArgumentBug 
 
     fun perceptron([X_loc, y_loc, num_iters_loc], sto) =
         (case (Store.apply(sto, X_loc), Store.apply(sto, y_loc), Store.apply(sto, num_iters_loc)) of
             (StorableValue.Dataset X, StorableValue.Dataset y, StorableValue.Int num_iters) =>
                 (sto, ExpressibleValue.Model (Learning.perceptron(X, y, num_iters)))
+        | _ => raise InvalidLearningArgumentBug 
         )
+    |   perceptron(_) = raise InvalidLearningArgumentBug 
 
     fun pocket_perceptron([X_loc, y_loc, num_iters_loc], sto) =
         (case (Store.apply(sto, X_loc), Store.apply(sto, y_loc), Store.apply(sto, num_iters_loc)) of
             (StorableValue.Dataset X, StorableValue.Dataset y, StorableValue.Int num_iters) =>
                 (sto, ExpressibleValue.Model (Learning.pocket_perceptron(X, y, num_iters)))
+        | _ => raise InvalidLearningArgumentBug 
         )
+    |   pocket_perceptron(_) = raise InvalidLearningArgumentBug 
 
     fun logistic_regression([X_loc, y_loc, label_of_interest_loc, learning_rate_loc, batch_size_loc, num_epochs_loc], sto) =
         (case (Store.apply(sto, X_loc), Store.apply(sto, y_loc), Store.apply(sto, label_of_interest_loc),
@@ -202,7 +220,9 @@ struct
             (StorableValue.Dataset X, StorableValue.Dataset y, StorableValue.String label_of_interest,
                 StorableValue.Real learning_rate, StorableValue.Int batch_size, StorableValue.Int num_epochs) =>
                     (sto, ExpressibleValue.Model (Learning.logistic_regression(X, y, label_of_interest, learning_rate, batch_size, num_epochs)))
+        | _ => raise InvalidLearningArgumentBug 
         )
+    |   logistic_regression(_) = raise InvalidLearningArgumentBug 
 
     fun linear_regression([X_loc, y_loc, learning_rate_loc, batch_size_loc, num_epochs_loc], sto) =
         (case (Store.apply(sto, X_loc), Store.apply(sto, y_loc), Store.apply(sto, learning_rate_loc),
@@ -210,18 +230,24 @@ struct
             (StorableValue.Dataset X, StorableValue.Dataset y, StorableValue.Real learning_rate,
                                         StorableValue.Int batch_size, StorableValue.Int num_epochs) =>
                 (sto, ExpressibleValue.Model (Learning.linear_regression(X, y, learning_rate, batch_size, num_epochs)))
+        | _ => raise InvalidLearningArgumentBug 
         )
+    |   linear_regression(_) = raise InvalidLearningArgumentBug 
 
     fun predict([X_loc, model_loc], sto) =
         (case (Store.apply(sto, X_loc), Store.apply(sto, model_loc)) of
             (StorableValue.Dataset X, StorableValue.Model model) =>
                 (sto, ExpressibleValue.Dataset (Learning.predict(X, model)))
+        | _ => raise InvalidLearningArgumentBug 
         )
+    |   predict(_) = raise InvalidLearningArgumentBug 
 
     fun load_model([filename_loc], sto) =
         (case Store.apply(sto, filename_loc) of
             StorableValue.String filename => (sto, ExpressibleValue.Model (Learning.load_model(filename)))
+        | _ => raise InvalidLearningArgumentBug 
         )
+    |   load_model(_) = raise InvalidLearningArgumentBug 
 
     fun save_model([model_loc, filename_loc], sto) =
         (case (Store.apply(sto, model_loc), Store.apply(sto, filename_loc)) of
@@ -231,7 +257,9 @@ struct
                 in
                     (sto, ExpressibleValue.VoidValue)
                 end
+        | _ => raise InvalidLearningArgumentBug 
         )
+    |   save_model(_) = raise InvalidLearningArgumentBug 
 end
 
 
@@ -315,13 +343,15 @@ struct
       (Any, srt) => srt
     | (srt, Any) => srt
     | (Int, Int) => Int
+    | (Int, Real) => Real
+    | (Real, Int) => Real
     | (Real, Real) => Real
     | (Char, Char) => Char
     | (Bool, Bool) => Bool
     | (String, String) => String
     | (Dataset, Dataset) => Dataset
     | (Model, Model) => Model
-    | (Array srt_1_1, Array srt_2_1) => commonSort(srt_1_1, srt_2_1)
+    | (Array srt_1_1, Array srt_2_1) => Array (commonSort (srt_1_1, srt_2_1))
     | (Product srt_1list, Product srt_2list) =>
       let
         fun srtPairs([])([]) = []
