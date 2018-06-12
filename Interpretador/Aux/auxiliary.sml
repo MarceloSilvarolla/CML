@@ -243,7 +243,7 @@ struct
   type environment = Id -> denotableValue
   fun empty(id) = DenotableValue.Unbound
   fun apply(env, DataTypes.Id id) = env(DataTypes.Id id)
-  fun initial(DataTypes.Id id) = (
+  (*fun initial(DataTypes.Id id) = (
       case id of
 	  "load_data" => DenotableValue.Function LearningAuxBridge.load_data
        |  "save_data" => DenotableValue.Function LearningAuxBridge.save_data
@@ -262,7 +262,7 @@ struct
        | "save_model" => DenotableValue.Function LearningAuxBridge.save_model
 
        | _ => empty(id)
-  )
+  )*)
 
   fun extend(env:environment,DataTypes.Id
     id:DataTypes.Id,denVal:denotableValue)(DataTypes.Id id1:DataTypes.Id):denotableValue =
