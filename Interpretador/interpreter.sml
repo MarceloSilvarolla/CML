@@ -1,7 +1,7 @@
 structure CML :
 sig val parse : string -> DataTypes.Prog
-    val run : DataTypes.Prog -> unit
     val typeCheck : DataTypes.Prog -> LocalTypeEnv.environment * GlobalTypeEnv.environment
+    val run : DataTypes.Prog -> unit
     val interpret : string -> unit
 end =
 struct
@@ -108,11 +108,66 @@ struct
       (newLocalEnv, newGlobalEnv)
     end
 
-  (* TODO *)
-  and typeCheckDef(DataTypes.FunDef _) (localEnv, globalEnv) = (localEnv, globalEnv)
+  |   typeCheckDec(DataTypes.Dec (typeSpec, DataTypes.Id id, SOME exp))(localEnv, globalEnv) =
+    let
+      val expSrt = typify(exp)(globalEnv)
+      val typeSpecSrt = Sort.typeSpecSort(typeSpec)
+      val newLocalEnv = LocalTypeEnv.extend(localEnv, DataTypes.Id id, typeSpecSrt)
+      val newGlobalEnv =  GlobalTypeEnv.extend(globalEnv, DataTypes.Id id, typeSpecSrt)
+      val _ = Sort.commonSort(expSrt, typeSpecSrt)
+    in
+      (newLocalEnv, newGlobalEnv)
+    end
 
-  (* testar consistencia, nao igualdade de tipos!!!! *)
-  (*and typeCheckDec(DataTypes.Dec (typeSpec, DataTypes.Id id, SOME exp))(localEnv, globalEnv) =*)
+  and typeCheckDef(DataTypes.FunDef (typeSpec, _, _, cmd)) (localEnv, globalEnv) = 
+    typeCheckC(cmd)(localEnv, globalEnv)(Sort.typeSpecSort(typeSpec))
+
+  and typeCheckDecOrCmd(DataTypes.DecNotCmd dec)(localEnv, globalEnv) (returnSrt) = typeCheckDec(dec) (localEnv, globalEnv)
+  |   typeCheckDecOrCmd(DataTypes.CmdNotDec cmd)(localEnv, globalEnv) (returnSrt) = typeCheckC(cmd)(localEnv, globalEnv)(returnSrt)
+
+  (* TODO: trocar uns emptyEnv por initialEnv !!!!!!!! *)
+  and typeCheckC(DataTypes.CompCmd (decOrCmdList))(localEnv, globalEnv)(returnSrt) =
+    (foldl 
+      (fn (decOrCmd, (localEnv, globalEnv)) => typeCheckDecOrCmd(decOrCmd) (localEnv, globalEnv) (returnSrt))
+      (LocalTypeEnv.empty, globalEnv)
+      decOrCmdList)
+  |   typeCheckC(DataTypes.ExpCmd NONE)(localEnv, globalEnv)(returnSrt) = (localEnv, globalEnv)
+  |   typeCheckC(DataTypes.ExpCmd (SOME exp))(localEnv, globalEnv)(returnSrt) = (typify(exp)(globalEnv);(localEnv, globalEnv))
+  |   typeCheckC(DataTypes.SelCmd (exp, cmd, NONE)) (localEnv, globalEnv)(returnSrt) = 
+    let
+      val _ = (case typify(exp)(globalEnv) of
+        Sort.Bool => () | _ => raise InvalidTypeInLogicalOperation)
+      val _ = typeCheckC(cmd)(localEnv, globalEnv)(returnSrt)
+    in
+      (localEnv, globalEnv)
+    end
+  |   typeCheckC(DataTypes.SelCmd (exp, cmd_1, SOME cmd_2)) (localEnv, globalEnv)(returnSrt) =
+     let
+      val _ = (case typify(exp)(globalEnv) of
+        Sort.Bool => () | _ => raise InvalidTypeInLogicalOperation)
+      val _ = typeCheckC(cmd_1)(localEnv, globalEnv)(returnSrt)
+      val _ = typeCheckC(cmd_2)(localEnv, globalEnv)(returnSrt)
+    in
+      (localEnv, globalEnv)
+    end
+  |   typeCheckC(DataTypes.IterCmd (exp, cmd))(localEnv, globalEnv)(returnSrt) =
+    let
+      val _ = (case typify(exp)(globalEnv) of
+        Sort.Bool => () | _ => raise InvalidTypeInLogicalOperation)
+      val _ = typeCheckC(cmd)(localEnv, globalEnv)(returnSrt)
+    in
+      (localEnv, globalEnv)
+    end
+  |   typeCheckC(DataTypes.JumpCmd (NONE)) (localEnv, globalEnv) (returnSrt) = (localEnv, globalEnv)
+  |   typeCheckC(DataTypes.JumpCmd (SOME exp)) (localEnv, globalEnv) (returnSrt) = 
+    let 
+      val expSrt = typify(exp)(globalEnv)
+      val _ = Sort.commonSort(expSrt, returnSrt)
+    in
+      (localEnv, globalEnv) 
+    end
+  
+  |   typeCheckC(DataTypes.Skip) (localEnv, globalEnv) (returnSrt) = (localEnv, globalEnv)
     
   and typify(DataTypes.LitExp litExp)(globalEnv):Sort.sort  =
     (case litExp of
@@ -129,7 +184,8 @@ struct
    in
      Sort.Array (Sort.commonSortList(expSorts))
    end
-   handle Sort.InconsistentSorts => raise ArrayElementsOfInconsistentTypes)
+   handle Sort.InconsistentSorts => raise ArrayElementsOfInconsistentTypes
+   )
 
   |   typify(DataTypes.OrExp (exp_1, exp_2))(globalEnv):Sort.sort =
     (let 
@@ -210,6 +266,102 @@ struct
 
   |   typify(DataTypes.GeExp (exp_1, exp_2))(globalEnv):Sort.sort =
     typify(DataTypes.EqExp (exp_1, exp_2)) globalEnv
+
+  |   typify(DataTypes.IdOrArrAccessExp (DataTypes.Id id, expList)) (globalEnv) =
+    let
+      val _ = 
+        (case Sort.commonSortList(map (fn exp => typify(exp)(globalEnv)) expList) of
+          Sort.Int => ()
+        | _ => raise InvalidTypeInArrayAccessIndex
+        )
+      fun arrAccessType(arrSrt, expList) =
+        (case (arrSrt, expList) of
+          (_, []) => arrSrt
+        | (Sort.Array srt, exp::exps) => arrAccessType(srt, exps)
+        | _ => raise TooManyIndicesInArrayAccess
+        ) 
+    in
+      arrAccessType( GlobalTypeEnv.apply(globalEnv, DataTypes.Id id), expList )
+    end
+
+  |   typify(DataTypes.AssignExp (DataTypes.Id id, expList, exp)) (globalEnv) =
+    let
+      val expSrt = typify(exp) (globalEnv)
+      val arrAccessSrt = typify(DataTypes.IdOrArrAccessExp (DataTypes.Id id, expList)) (globalEnv)
+    in
+      Sort.commonSort(expSrt, arrAccessSrt)
+    end
+  
+  |   typify(DataTypes.UMinusExp exp) (globalEnv) = 
+    let val expSrt = typify(exp) (globalEnv) in
+      case expSrt of 
+        Sort.Int => expSrt
+      | Sort.Real => expSrt
+      |  _ => raise InvalidTypeInArithmeticOperation
+    end
+  
+  |   typify(DataTypes.AddExp (exp_1, exp_2)) (globalEnv) =
+     let 
+       val exp_1Srt = typify(exp_1) (globalEnv)
+       val exp_2Srt = typify(exp_2) (globalEnv)
+       in
+       case (exp_1Srt, exp_2Srt) of 
+         (Sort.Int, Sort.Int) => (Sort.Int)
+       | (Sort.Int, Sort.Real) => (Sort.Real)
+       | (Sort.Real, Sort.Int) => (Sort.Real)
+       | (Sort.Real, Sort.Real) => (Sort.Real)
+       |  _ => raise InvalidTypeInArithmeticOperation
+     end
+
+  |   typify(DataTypes.SubExp (exp_1, exp_2)) (globalEnv) =
+     let 
+       val exp_1Srt = typify(exp_1) (globalEnv)
+       val exp_2Srt = typify(exp_2) (globalEnv)
+       in
+       case (exp_1Srt, exp_2Srt) of 
+         (Sort.Int, Sort.Int) => (Sort.Int)
+       | (Sort.Int, Sort.Real) => (Sort.Real)
+       | (Sort.Real, Sort.Int) => (Sort.Real)
+       | (Sort.Real, Sort.Real) => (Sort.Real)
+       |  _ => raise InvalidTypeInArithmeticOperation
+     end
+
+  |   typify(DataTypes.MultExp (exp_1, exp_2)) (globalEnv) =
+    let 
+      val exp_1Srt = typify(exp_1) (globalEnv)
+      val exp_2Srt = typify(exp_2) (globalEnv)
+      in
+      case (exp_1Srt, exp_2Srt) of 
+         (Sort.Int, Sort.Int) => (Sort.Int)
+       | (Sort.Int, Sort.Real) => (Sort.Real)
+       | (Sort.Real, Sort.Int) => (Sort.Real)
+       | (Sort.Real, Sort.Real) => (Sort.Real)
+      |  _ => raise InvalidTypeInArithmeticOperation
+    end
+   
+ |   typify(DataTypes.DivExp (exp_1, exp_2)) (globalEnv) =
+    let 
+      val exp_1Srt = typify(exp_1) (globalEnv)
+      val exp_2Srt = typify(exp_2) (globalEnv)
+      in
+      case (exp_1Srt, exp_2Srt) of 
+         (Sort.Int, Sort.Int) => (Sort.Int)
+       | (Sort.Int, Sort.Real) => (Sort.Real)
+       | (Sort.Real, Sort.Int) => (Sort.Real)
+       | (Sort.Real, Sort.Real) => (Sort.Real)
+      |  _ => raise InvalidTypeInArithmeticOperation
+    end
+ |   typify(DataTypes.ParenExp exp) (globalEnv) =
+   typify(exp) (globalEnv)
+ |   typify(DataTypes.AppExp (DataTypes.Id id, expList)) (globalEnv) =
+   let
+     val functionSrt = GlobalTypeEnv.apply(globalEnv, DataTypes.Id id)
+     val argListSrt = Sort.Product (map (fn exp => typify(exp)(globalEnv)) expList)
+   in
+     case functionSrt of
+       Sort.To (paramListSrt, returnSrt) => (Sort.commonSort(argListSrt, paramListSrt); returnSrt)
+     | _ => raise NonFunctionApplication
+   end
 
   (* 3: running *)
   and run(parseTree:DataTypes.Prog):unit =
@@ -507,7 +659,7 @@ struct
                 )
         |   _ => raise InvalidTypeInLogicalOperationBug
         )
-
+    (* TODO: implementar igualdades permitidas pelo typify acima (string versus string, etc.) *)
     |   E(DataTypes.EqExp (exp_1, exp_2)) (env, sto) =
         (*let
           val (sto_1, expVal_1) = E(exp_1)(env,sto)
@@ -559,7 +711,7 @@ struct
         in
             (sto_f, ExpressibleValue.Bool (not(boolVal)))
         end
-
+    (* TODO: implementar comparações especificadas pelo typify (como string versus string, etc.) *)
     |   E(DataTypes.LtExp (exp_1, exp_2)) (env, sto) =
         (case E(exp_1)(env,sto) of
             (sto_1, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
@@ -580,6 +732,7 @@ struct
         |   _ => raise InvalidTypeInComparisonBug
         )
 
+    (* TODO: implementar comparações especificadas pelo typify (como string versus string, etc.) *)
     |   E(DataTypes.LeExp (exp_1, exp_2)) (env, sto) =
         (case E(exp_1)(env,sto) of
             (sto_1, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
@@ -743,7 +896,7 @@ struct
   and interpret(fileName:string):unit =
         let
           val parseTree = parse(fileName)
-          (*val _ = typeCheck(parseTree)*)
+          val _ = typeCheck(parseTree)
         in run(parseTree)
         end
         handle ParseError => ()
