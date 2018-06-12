@@ -58,9 +58,9 @@ struct
   (* 2: type-checking *)
   and typeCheck(parseTree:DataTypes.Prog):LocalTypeEnv.environment * GlobalTypeEnv.environment =
     typeCheckP(parseTree)
-  
+
   and typeCheckP(prog:DataTypes.Prog):LocalTypeEnv.environment * GlobalTypeEnv.environment =
-    let 
+    let
       val (localFuncTypeEnv, globalFuncTypeEnv) = typeCheckP1(prog)(LocalTypeEnv.empty, GlobalTypeEnv.empty)
       val (finalLocalTypeEnv, finalGlobalTypeEnv) = typeCheckP2(prog)(localFuncTypeEnv, globalFuncTypeEnv)
     in
@@ -70,7 +70,7 @@ struct
   and typeCheckP1((DataTypes.Prog []) : DataTypes.Prog)(localEnv, globalEnv) = (localEnv, globalEnv)
   |   typeCheckP1(DataTypes.Prog ( (DataTypes.FunDefNotDec (DataTypes.FunDef (typeSpec, DataTypes.Id id, params, cmd))) :: progTail) )
    (localEnv, globalEnv) =
-    let 
+    let
       val returnSort = Sort.typeSpecSort(typeSpec)
       val inputSort = Sort.Product (
         map
@@ -81,19 +81,19 @@ struct
       val newGlobalEnv = GlobalTypeEnv.extend(globalEnv, DataTypes.Id id, functionSort)
     in
       typeCheckP1(DataTypes.Prog progTail)(newLocalEnv, newGlobalEnv)
-    end 
+    end
   |   typeCheckP1(DataTypes.Prog (_:: progTail))(localEnv, globalEnv) = typeCheckP1(DataTypes.Prog progTail)(localEnv, globalEnv)
-  (* 2.2: type-checking everything using function types from step 2.1 *) 
+  (* 2.2: type-checking everything using function types from step 2.1 *)
   and typeCheckP2(DataTypes.Prog [])(localEnv, globalEnv) = (localEnv, globalEnv)
 
   |   typeCheckP2(DataTypes.Prog ((DataTypes.DecNotFunDef dec) :: progTail))(localEnv, globalEnv) =
     let
       val (newLocalEnv, newGlobalEnv) = typeCheckDec(dec)(localEnv, globalEnv)
     in
-      typeCheckP2(DataTypes.Prog progTail)(newLocalEnv, newGlobalEnv) 
+      typeCheckP2(DataTypes.Prog progTail)(newLocalEnv, newGlobalEnv)
     end
 
-  |   typeCheckP2( DataTypes.Prog ((DataTypes.FunDefNotDec funDef) :: progTail) )(localEnv, globalEnv) = 
+  |   typeCheckP2( DataTypes.Prog ((DataTypes.FunDefNotDec funDef) :: progTail) )(localEnv, globalEnv) =
     let
       val (newLocalEnv, newGlobalEnv) = typeCheckDef(funDef)(localEnv, globalEnv)
     in
@@ -178,8 +178,8 @@ struct
     | DataTypes.StringLit realLit => Sort.String
     )
 
-  |   typify(DataTypes.ArrExp arrExp)(globalEnv):Sort.sort = 
-   (let 
+  |   typify(DataTypes.ArrExp arrExp)(globalEnv):Sort.sort =
+   (let
      val expSorts = map (fn exp => typify(exp)(globalEnv)) arrExp
    in
      Sort.Array (Sort.commonSortList(expSorts))
@@ -188,10 +188,10 @@ struct
    )
 
   |   typify(DataTypes.OrExp (exp_1, exp_2))(globalEnv):Sort.sort =
-    (let 
+    (let
       val sort_1 = typify(exp_1)(globalEnv)
       val sort_2 = typify(exp_2)(globalEnv)
-      val _ = (case Sort.commonSort(sort_1, sort_2) of Sort.Bool => () 
+      val _ = (case Sort.commonSort(sort_1, sort_2) of Sort.Bool => ()
               | _ => raise InvalidTypeInLogicalOperation)
       handle Sort.InconsistentSorts => raise InvalidTypeInLogicalOperation
     in
@@ -199,7 +199,7 @@ struct
     end)
 
    |   typify(DataTypes.AndExp (exp_1, exp_2))(globalEnv):Sort.sort =
-    (let 
+    (let
       val sort_1 = typify(exp_1)(globalEnv)
       val sort_2 = typify(exp_2)(globalEnv)
       val _ = (case Sort.commonSort(sort_1, sort_2) of Sort.Bool => ()
@@ -371,7 +371,7 @@ struct
 
   and P(parseTree:DataTypes.Prog):int =
         let
-            val (env_1, sto_1) = P1(parseTree)(Env.empty, Store.empty)
+            val (env_1, sto_1) = P1(parseTree)(Env.initial, Store.empty)
             val (env_2, sto_2) = P2(parseTree)(env_1, Store.empty)
             val (env_f, sto_3) = P3(parseTree)(env_2, Store.empty)
             val main = Env.apply(env_f, DataTypes.Id "main")
@@ -448,7 +448,7 @@ struct
                 in
                   modifyEnv(env_2, param_dec_list_tail, tl(arr))
                 end
-            | _ => raise DefBug  
+            | _ => raise DefBug
             )
     in
         e()
@@ -476,12 +476,22 @@ struct
           end
 
   and E(DataTypes.LitExp lit)(env,sto):store*expressibleValue =
+    let
+        fun remove_quotes(str) =
+            let
+                val strs = String.tokens (fn ch => ch = #"\"") str
+                fun join_strs(strs) = if length(strs) = 0 then "" else "\"" ^ hd(strs) ^ join_strs(tl(strs))
+            in
+                hd(strs) ^ join_strs(tl(strs))
+            end
+    in
       (case lit of
         DataTypes.IntLit intLit => (sto, ExpressibleValue.Int (let val SOME intValue = Int.fromString(intLit) in intValue end))
       | DataTypes.RealLit realLit => (sto, ExpressibleValue.Real (let val SOME realValue = Real.fromString(realLit) in realValue end))
       | DataTypes.BoolLit boolLit => (sto, ExpressibleValue.Bool (let val SOME boolValue = Bool.fromString(boolLit) in boolValue end))
-      | DataTypes.CharLit charLit => (sto, ExpressibleValue.Char (let val SOME charValue = Char.fromString(charLit) in charValue end))
-      | DataTypes.StringLit stringLit => (sto, ExpressibleValue.String stringLit))
+      | DataTypes.CharLit charLit => (sto, ExpressibleValue.Char (let val SOME charValue = Char.fromString(hd(String.tokens (fn ch => ch = #"'") charLit)) in charValue end))
+      | DataTypes.StringLit stringLit => (sto, ExpressibleValue.String (remove_quotes(stringLit))))
+    end
 
   |   E(DataTypes.ArrExp expList)(env, sto) =
         (case expList of
@@ -665,7 +675,7 @@ struct
           val (sto_1, expVal_1) = E(exp_1)(env,sto)
           val (sto_f, expVal_2) = E(exp_2)(env,sto_1)
         in
-          
+
         end*)
         (case E(exp_1)(env,sto) of
             (sto_1, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
@@ -775,7 +785,7 @@ struct
     |   E(DataTypes.ParenExp exp) (env, sto) = E(exp)(env, sto)
 
 
-    
+
 
   |   E(DataTypes.AppExp (DataTypes.Id id, [])) (env,sto) =
         let

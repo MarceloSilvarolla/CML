@@ -8,7 +8,7 @@ end
 structure ArrayValue =
 struct
   type arrayValue = Location.location list
-  fun 
+  fun
     toString([]) = "{}"
   | toString(locs) = "{" ^ String.concatWith(", ")(map Int.toString locs) ^ "}"
 end
@@ -135,6 +135,107 @@ struct
   type returnFlag = bool
 end
 
+structure LearningAuxBridge =
+struct
+    fun load_data([filename_loc, separator_loc], sto) =
+        (case (Store.apply(sto, filename_loc), Store.apply(sto, separator_loc)) of
+            (StorableValue.String filename, StorableValue.Char separator) =>
+                (sto, ExpressibleValue.Dataset (Learning.load_data(filename, separator)))
+        )
+
+    fun save_data([dataset_loc, filename_loc, separator_loc], sto) =
+        (case (Store.apply(sto, dataset_loc), Store.apply(sto, filename_loc), Store.apply(sto, separator_loc)) of
+            (StorableValue.Dataset dataset, StorableValue.String filename, StorableValue.Char separator) =>
+                let
+                    val _ = Learning.save_data(dataset, filename, separator)
+                in
+                    (sto, ExpressibleValue.VoidValue)
+                end
+        )
+
+    fun get_columns_from_store(location_list, sto) =
+        if length(location_list) = 0 then
+            []
+        else
+            (case Store.apply(sto, hd(location_list)) of
+                StorableValue.String col => col :: get_columns_from_store(tl(location_list), sto)
+            )
+
+    fun columns([dataset_loc, columns_loc], sto) =
+        (case (Store.apply(sto, dataset_loc), Store.apply(sto, columns_loc)) of
+            (StorableValue.Dataset dataset, StorableValue.ArrayValue location_list) =>
+                (sto, ExpressibleValue.Dataset (Learning.columns(dataset, get_columns_from_store(location_list, sto))))
+        )
+
+    fun remove_columns([dataset_loc, columns_loc], sto) =
+        (case (Store.apply(sto, dataset_loc), Store.apply(sto, columns_loc)) of
+            (StorableValue.Dataset dataset, StorableValue.ArrayValue location_list) =>
+                (sto, ExpressibleValue.Dataset (Learning.remove_columns(dataset, get_columns_from_store(location_list, sto))))
+        )
+
+    fun rows([dataset_loc, first_loc, qt_loc], sto) =
+        (case (Store.apply(sto, dataset_loc), Store.apply(sto, first_loc), Store.apply(sto, qt_loc)) of
+            (StorableValue.Dataset dataset, StorableValue.Int first, StorableValue.Int qt) =>
+                (sto, ExpressibleValue.Dataset (Learning.rows(dataset, first, qt)))
+        )
+
+    fun num_rows([dataset_loc], sto) =
+        (case Store.apply(sto, dataset_loc) of
+            StorableValue.Dataset dataset => (sto, ExpressibleValue.Int (Learning.num_rows(dataset)))
+        )
+
+    fun perceptron([X_loc, y_loc, num_iters_loc], sto) =
+        (case (Store.apply(sto, X_loc), Store.apply(sto, y_loc), Store.apply(sto, num_iters_loc)) of
+            (StorableValue.Dataset X, StorableValue.Dataset y, StorableValue.Int num_iters) =>
+                (sto, ExpressibleValue.Model (Learning.perceptron(X, y, num_iters)))
+        )
+
+    fun pocket_perceptron([X_loc, y_loc, num_iters_loc], sto) =
+        (case (Store.apply(sto, X_loc), Store.apply(sto, y_loc), Store.apply(sto, num_iters_loc)) of
+            (StorableValue.Dataset X, StorableValue.Dataset y, StorableValue.Int num_iters) =>
+                (sto, ExpressibleValue.Model (Learning.pocket_perceptron(X, y, num_iters)))
+        )
+
+    fun logistic_regression([X_loc, y_loc, label_of_interest_loc, learning_rate_loc, batch_size_loc, num_epochs_loc], sto) =
+        (case (Store.apply(sto, X_loc), Store.apply(sto, y_loc), Store.apply(sto, label_of_interest_loc),
+                    Store.apply(sto, learning_rate_loc), Store.apply(sto, batch_size_loc), Store.apply(sto, num_epochs_loc)) of
+            (StorableValue.Dataset X, StorableValue.Dataset y, StorableValue.String label_of_interest,
+                StorableValue.Real learning_rate, StorableValue.Int batch_size, StorableValue.Int num_epochs) =>
+                    (sto, ExpressibleValue.Model (Learning.logistic_regression(X, y, label_of_interest, learning_rate, batch_size, num_epochs)))
+        )
+
+    fun linear_regression([X_loc, y_loc, learning_rate_loc, batch_size_loc, num_epochs_loc], sto) =
+        (case (Store.apply(sto, X_loc), Store.apply(sto, y_loc), Store.apply(sto, learning_rate_loc),
+                                        Store.apply(sto, batch_size_loc), Store.apply(sto, num_epochs_loc)) of
+            (StorableValue.Dataset X, StorableValue.Dataset y, StorableValue.Real learning_rate,
+                                        StorableValue.Int batch_size, StorableValue.Int num_epochs) =>
+                (sto, ExpressibleValue.Model (Learning.linear_regression(X, y, learning_rate, batch_size, num_epochs)))
+        )
+
+    fun predict([X_loc, model_loc], sto) =
+        (case (Store.apply(sto, X_loc), Store.apply(sto, model_loc)) of
+            (StorableValue.Dataset X, StorableValue.Model model) =>
+                (sto, ExpressibleValue.Dataset (Learning.predict(X, model)))
+        )
+
+    fun load_model([filename_loc], sto) =
+        (case Store.apply(sto, filename_loc) of
+            StorableValue.String filename => (sto, ExpressibleValue.Model (Learning.load_model(filename)))
+        )
+
+    fun save_model([model_loc, filename_loc], sto) =
+        (case (Store.apply(sto, model_loc), Store.apply(sto, filename_loc)) of
+            (StorableValue.Model model, StorableValue.String filename) =>
+                let
+                    val _ = Learning.save_model(model, filename)
+                in
+                    (sto, ExpressibleValue.VoidValue)
+                end
+        )
+end
+
+
+
 structure Env =
 struct
   type Id = DataTypes.Id
@@ -144,21 +245,21 @@ struct
   fun apply(env, DataTypes.Id id) = env(DataTypes.Id id)
   (*fun initial(DataTypes.Id id) = (
       case id of
-	  "load_data" => DenotableValue.Function Learning.load_data
-       |  "save_data" => DenotableValue.Function Learning.save_data
-       |  "columns" => DenotableValue.Function Learning.remove_columns
-       | "remove_columns"  => DenotableValue.Function Learning.remove_columns
-       | "rows" => DenotableValue.Function Learning.rows
-       | "num_rows" => DenotableValue.Function Learning.num_rows
-					       
-       | "perceptron" => DenotableValue.Function Learning.perceptron
-       | "pocket_perceptron" => DenotableValue.Function Learning.pocket_perceptron
-       | "logistic_regression" => DenotableValue.Function LearnignLib.logistic_regression
-       | "linear_regression" => DenotableValue.Function Learning.linear_regression
+	  "load_data" => DenotableValue.Function LearningAuxBridge.load_data
+       |  "save_data" => DenotableValue.Function LearningAuxBridge.save_data
+       |  "columns" => DenotableValue.Function LearningAuxBridge.columns
+       | "remove_columns"  => DenotableValue.Function LearningAuxBridge.remove_columns
+       | "rows" => DenotableValue.Function LearningAuxBridge.rows
+       | "num_rows" => DenotableValue.Function LearningAuxBridge.num_rows
 
-       | "predict" => DenotableValue.Function Learning.predict
-       | "load_model" => DenotableValue.Function Learning.load_model
-       | "save_model" => DenotableValue.Function Learning.save_model
+       | "perceptron" => DenotableValue.Function LearningAuxBridge.perceptron
+       | "pocket_perceptron" => DenotableValue.Function LearningAuxBridge.pocket_perceptron
+       | "logistic_regression" => DenotableValue.Function LearningAuxBridge.logistic_regression
+       | "linear_regression" => DenotableValue.Function LearningAuxBridge.linear_regression
+
+       | "predict" => DenotableValue.Function LearningAuxBridge.predict
+       | "load_model" => DenotableValue.Function LearningAuxBridge.load_model
+       | "save_model" => DenotableValue.Function LearningAuxBridge.save_model
 
        | _ => empty(id)
   )*)
@@ -166,7 +267,7 @@ struct
   fun extend(env:environment,DataTypes.Id
     id:DataTypes.Id,denVal:denotableValue)(DataTypes.Id id1:DataTypes.Id):denotableValue =
       if id1 = id then denVal else env(DataTypes.Id id1)
-  
+
   fun toStringAt(env, DataTypes.Id id):string =
     (case env(DataTypes.Id id) of
       DenotableValue.Location loc => "(" ^ id ^ ": " ^ Int.toString(loc) ^ ")"
@@ -180,13 +281,13 @@ struct
       fun c(
     )*)
   fun toString(env):string =
-    let 
+    let
       val completeEnv = (List.tabulate(256, fn n => toStringAt(env, DataTypes.Id (String.str(Char.chr(n))))))
       val onlyNonEmpty = List.filter (fn s => not (s = "")) completeEnv
     in
       String.concatWith(" ")(onlyNonEmpty)
     end
-  fun printEnv(env):unit = 
+  fun printEnv(env):unit =
     (print(toString(env)); print("\n"))
 end
 
@@ -221,15 +322,15 @@ struct
     | (Dataset, Dataset) => Dataset
     | (Model, Model) => Model
     | (Array srt_1_1, Array srt_2_1) => commonSort(srt_1_1, srt_2_1)
-    | (Product srt_1list, Product srt_2list) => 
-      let 
+    | (Product srt_1list, Product srt_2list) =>
+      let
         fun srtPairs([])([]) = []
         |   srtPairs([])(_) = raise IncorrectNumberOfArguments
         |   srtPairs(_)([]) = raise IncorrectNumberOfArguments
         |   srtPairs(srt_1head::srt_1tail)(srt_2head::srt_2tail) =
           (srt_1head, srt_2head) :: srtPairs(srt_1tail)(srt_2tail)
-        (*val (srtPairs, srt_2_1_rest) = foldr 
-         (fn 
+        (*val (srtPairs, srt_2_1_rest) = foldr
+         (fn
            (srtFrom_srt_1_1, (result, srtFrom_srt_2_1::srt_2_1_tail)) => ((srtFrom_srt_1_1, srtFrom_srt_2_1)::result, srt_2_1_tail)
          | (result, []) => raise IncorrectNumberOfArguments)
          ([], srt_2_1)
@@ -247,14 +348,14 @@ struct
     )
 
   fun commonSortList(sorts):sort =
-    foldl (fn (srt, accSrt) => commonSort(srt, accSrt)) Any sorts 
-  
+    foldl (fn (srt, accSrt) => commonSort(srt, accSrt)) Any sorts
+
 end
 
 structure LocalTypeEnv =
 struct
   exception MultipleLocalDeclarations
-  type environment = DataTypes.Id -> Sort.sort 
+  type environment = DataTypes.Id -> Sort.sort
   fun empty(_) = Sort.Unbound
   fun extend(env,DataTypes.Id id, srt):environment =
     (case env(DataTypes.Id id) of
@@ -263,18 +364,15 @@ struct
     )
   fun apply(env,DataTypes.Id id):Sort.sort =
     env(DataTypes.Id id)
-  
+
 end
 
 structure GlobalTypeEnv =
 struct
-  type environment = DataTypes.Id -> Sort.sort 
+  type environment = DataTypes.Id -> Sort.sort
   fun empty(_) = Sort.Unbound
   fun extend(env,DataTypes.Id id, srt):environment =
     (fn DataTypes.Id id1 => (if id1 = id then srt else env(DataTypes.Id id1)))
   fun apply(env,DataTypes.Id id):Sort.sort =
     env(DataTypes.Id id)
 end
-
-
-

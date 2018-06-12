@@ -8,4 +8,3 @@ struct
   val load_data = LoadData.load_data
   val save_data = SaveData.save_data
 end
-

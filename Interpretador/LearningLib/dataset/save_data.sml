@@ -13,7 +13,7 @@ fun compose_csv_row(row, separator) =
 			if length(row) = 1 then
 				insert_minus(strs) ^ "\n"
 			else
-				insert_minus(strs) ^ separator ^ compose_csv_row(tl(row), separator)
+				insert_minus(strs) ^ Char.toString(separator) ^ compose_csv_row(tl(row), separator)
 		end;
 
 fun compose_csv_rows(rows, separator) =
