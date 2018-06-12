@@ -61,7 +61,7 @@ struct
 
   and typeCheckP(prog:DataTypes.Prog):LocalTypeEnv.environment * GlobalTypeEnv.environment =
     let
-      val (localFuncTypeEnv, globalFuncTypeEnv) = typeCheckP1(prog)(LocalTypeEnv.empty, GlobalTypeEnv.empty)
+      val (localFuncTypeEnv, globalFuncTypeEnv) = typeCheckP1(prog)(LocalTypeEnv.initial, GlobalTypeEnv.initial)
       val (finalLocalTypeEnv, finalGlobalTypeEnv) = typeCheckP2(prog)(localFuncTypeEnv, globalFuncTypeEnv)
     in
       (finalLocalTypeEnv, finalGlobalTypeEnv)
@@ -129,7 +129,7 @@ struct
   and typeCheckC(DataTypes.CompCmd (decOrCmdList))(localEnv, globalEnv)(returnSrt) =
     (foldl
       (fn (decOrCmd, (localEnv, globalEnv)) => typeCheckDecOrCmd(decOrCmd) (localEnv, globalEnv) (returnSrt))
-      (LocalTypeEnv.empty, globalEnv)
+      (LocalTypeEnv.initial, globalEnv)
       decOrCmdList)
   |   typeCheckC(DataTypes.ExpCmd NONE)(localEnv, globalEnv)(returnSrt) = (localEnv, globalEnv)
   |   typeCheckC(DataTypes.ExpCmd (SOME exp))(localEnv, globalEnv)(returnSrt) = (typify(exp)(globalEnv);(localEnv, globalEnv))

@@ -357,6 +357,26 @@ struct
   exception MultipleLocalDeclarations
   type environment = DataTypes.Id -> Sort.sort
   fun empty(_) = Sort.Unbound
+  fun initial(DataTypes.Id id) = (
+      case id of
+	  "load_data"  => Sort.To (Sort.Product [Sort.String, Sort.Char], Sort.Dataset)
+       |  "save_data" => Sort.To (Sort.Product [Sort.Dataset, Sort.String, Sort.Char], Sort.Void)
+       |  "columns" => Sort.To (Sort.Product [Sort.Dataset, Sort.Array (Sort.String)], Sort.Dataset)
+       | "remove_columns"  => Sort.To (Sort.Product [Sort.Dataset, Sort.Array (Sort.String)], Sort.Dataset)
+       | "rows" => Sort.To (Sort.Product [Sort.Dataset, Sort.Int, Sort.Int], Sort.Dataset)
+       | "num_rows" => Sort.To (Sort.Product [Sort.Dataset], Sort.Int)
+
+       | "perceptron" => Sort.To (Sort.Product [Sort.Dataset, Sort.Dataset, Sort.Int], Sort.Model)
+       | "pocket_perceptron" => Sort.To (Sort.Product [Sort.Dataset, Sort.Dataset, Sort.Int], Sort.Model)
+       | "logistic_regression" => Sort.To (Sort.Product [Sort.Dataset, Sort.Dataset, Sort.String, Sort.Real, Sort.Int, Sort.Int], Sort.Model)
+       | "linear_regression" => Sort.To (Sort.Product [Sort.Dataset, Sort.Dataset, Sort.Real, Sort.Int, Sort.Int], Sort.Model)
+
+       | "predict" => Sort.To (Sort.Product [Sort.Dataset, Sort.Model], Sort.Dataset)
+       | "load_model" => Sort.To (Sort.Product [Sort.String], Sort.Model)
+       | "save_model" => Sort.To (Sort.Product [Sort.Model, Sort.String], Sort.Void)
+
+       | _ => empty(id)
+  )
   fun extend(env,DataTypes.Id id, srt):environment =
     (case env(DataTypes.Id id) of
       Sort.Unbound => (fn DataTypes.Id id1 => (if id1 = id then srt else env(DataTypes.Id id1)))
@@ -371,6 +391,7 @@ structure GlobalTypeEnv =
 struct
   type environment = DataTypes.Id -> Sort.sort
   fun empty(_) = Sort.Unbound
+  fun initial(id) = LocalTypeEnv.initial(id)
   fun extend(env,DataTypes.Id id, srt):environment =
     (fn DataTypes.Id id1 => (if id1 = id then srt else env(DataTypes.Id id1)))
   fun apply(env,DataTypes.Id id):Sort.sort =
