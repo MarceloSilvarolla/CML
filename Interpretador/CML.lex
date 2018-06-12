@@ -118,6 +118,10 @@ EOL = ("\013\010" | "\010" | "\013");
 <CML> . => (col:=yypos-(!eolpos); badCh(fileName,yytext,!lin,!col); T.BOGUS_SYMBOL(!lin,!col));
 
 <COMMENT>"*/" => ( YYBEGIN CML; continue());
+<COMMENT>{EOL} => ( lin:=(!lin)+1;eolpos:=yypos+size yytext; 
+                        print( "EOL(yypos=" ^ Int.toString(yypos) ^ ", lin=" ^ Int.toString(!lin) ^ 
+                         ", eolpos=" ^ Int.toString(!eolpos) ^ ") " ); continue());
+
 <COMMENT> . => (continue());
 
 
