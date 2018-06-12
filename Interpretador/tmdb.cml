@@ -1,0 +1,34 @@
+string path = "../demonstracao/tmdb_simple.csv";
+
+dataset[] split_train_test(dataset D, int train_size, int test_size){
+  dataset test = rows(D, 0, test_size);
+  dataset train;
+
+  if(train_size > 0 && train_size < num_rows(D) - test_size){
+    train = rows(D, test_size, train_size);
+  } else {
+    train = rows(D, test_size, num_rows(D) - test_size);
+  }
+
+  return {train, test};
+}
+
+int main(){
+  dataset D = load_data(path, ',');
+
+  dataset[] Ds = split_train_test(D, -1, 200);
+  dataset train = Ds[0];
+  dataset test = Ds[1];
+
+  save_data(train, "../demonstracao/tmdb_train.csv", ',');
+  save_data(test, "../demonstracao/tmdb_test.csv", ',');
+
+  dataset train_X = remove_columns(train, {"vote_average"});
+  dataset train_y = columns(train, {"vote_average"});
+
+  model lr = linear_regression(train_X, train_y, 0.01, 10, 500);
+
+  save_model(lr, "tmdb_linreg.model");
+
+  return 0;
+}

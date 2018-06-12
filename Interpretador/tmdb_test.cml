@@ -1,0 +1,15 @@
+int main(){
+  dataset test = load_data("../demonstracao/tmdb_test.csv", ',');
+
+  dataset test_x = remove_columns(test, {"vote_average"});
+  dataset test_y = columns(test, {"vote_average"});
+
+  model LR = load_model("tmdb_linreg.model");
+
+  dataset predictions = predict(test_x, LR);
+
+  save_data(predictions, "../demonstracao/tmdb_predictions.csv", ',');
+  save_data(test_y, "../demonstracao/tmdb_correct.csv", ',');
+
+  return 0;
+}
