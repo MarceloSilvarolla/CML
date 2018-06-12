@@ -45,7 +45,7 @@ struct
         (msg,line,col) =>
          (print("Parse error!\n" ^ fileName ^ "["^Int.toString line^":"
                ^Int.toString col^"] "^msg^"\n"); raise ParseError)
-    val _ = Compiler.Control.Print.printDepth:=50;
+    (*val _ = Compiler.Control.Print.printDepth:=50;*)
     val (tree, rem) = CMLParser.parse
           (15,
           (CMLParser.makeLexer grab fileName),
@@ -305,6 +305,7 @@ struct
       val _ =
         (case Sort.commonSortList(map (fn exp => typify(exp)(globalEnv)) expList) of
           Sort.Int => ()
+        | Sort.Any => ()
         | _ => raise InvalidTypeInArrayAccessIndex
         )
       fun arrAccessType(arrSrt, expList) =
