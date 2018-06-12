@@ -660,12 +660,12 @@ struct
         |   _ => raise InvalidTypeInLogicalOperationBug
         )
     (* TODO: implementar igualdades permitidas pelo typify acima (string versus string, etc.) *)
-    |   E(DataTypes.EqExp (exp_1, exp_2)) (env, sto) =
-        (*let
+    (*|   E(DataTypes.EqExp (exp_1, exp_2)) (env, sto) =
+        let
           val (sto_1, expVal_1) = E(exp_1)(env,sto)
           val (sto_f, expVal_2) = E(exp_2)(env,sto_1)
         in
-          
+        
         end*)
         (case E(exp_1)(env,sto) of
             (sto_1, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
