@@ -1,0 +1,19 @@
+dataset getRelevantMovies(dataset movies){
+	int num_movies = num_rows(movies);
+        if (num_movies < 9999){
+		return movies;
+	}
+	else {
+		return rows(movies, 1, 10000);
+	}
+}
+
+
+int main() {
+   string file_name = "movies.csv";
+   int[][] v = {{42}, {}, {1337, 1729}};
+   print(v);
+   
+   return 0;
+}
+

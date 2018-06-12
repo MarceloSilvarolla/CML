@@ -262,7 +262,30 @@ struct
     |   save_model(_) = raise InvalidLearningArgumentBug 
 end
 
+structure Print =
+struct
+  exception InvalidPrintArgumentBug
+  fun anyToString([loc], sto) =
+    let
+      val stoVal = Store.apply(sto, loc)
+    in
+      case stoVal of
+        StorableValue.Int x => Int.toString(x)
+      | StorableValue.Real x => Real.toString(x)
+      | StorableValue.Bool b => Bool.toString(b)
+      | StorableValue.Char c => Char.toString(c)
+      | StorableValue.String s => String.toString(s)
+      | StorableValue.Dataset d => "<dataset>"
+      | StorableValue.Model m => "<model>"
+      | StorableValue.ArrayValue locs => "{" ^ String.concatWith(", ") (map (fn loc => anyToString([loc], sto)) locs) ^ "}"
+      | StorableValue.Unused => raise InvalidPrintArgumentBug
+      | StorableValue.Undefined => raise InvalidPrintArgumentBug
+    end
+  |  anyToString(_) = raise InvalidPrintArgumentBug
 
+  fun printAny([loc], sto) =
+    (print(anyToString([loc], sto)); (sto, ExpressibleValue.VoidValue))
+end
 
 structure Env =
 struct
@@ -288,7 +311,8 @@ struct
        | "predict" => DenotableValue.Function LearningAuxBridge.predict
        | "load_model" => DenotableValue.Function LearningAuxBridge.load_model
        | "save_model" => DenotableValue.Function LearningAuxBridge.save_model
-
+       
+       | "print" => DenotableValue.Function Print.printAny
        | _ => empty(id)
   )
 
@@ -321,7 +345,7 @@ end
 
 structure Sort =
 struct
-  exception UnboundBug
+  exception UnboundVariableInExpression
   exception IncorrectNumberOfArguments
   exception InconsistentSorts
   datatype sort = Int | Real | Char | Bool | String | Dataset | Model | Array of sort
@@ -372,8 +396,8 @@ struct
     | (To (srt_1_1, srt_1_2), To (srt_2_1, srt_2_2))  =>
       (To (commonSort(srt_1_1, srt_2_1), commonSort(srt_1_2, srt_2_2)))
     | (Void, Void) => Void
-    | (Unbound,_) => raise UnboundBug
-    | (_,Unbound) => raise UnboundBug
+    | (Unbound,_) => raise UnboundVariableInExpression
+    | (_,Unbound) => raise UnboundVariableInExpression
     | _ => raise InconsistentSorts
     )
 
@@ -404,6 +428,8 @@ struct
        | "predict" => Sort.To (Sort.Product [Sort.Dataset, Sort.Model], Sort.Dataset)
        | "load_model" => Sort.To (Sort.Product [Sort.String], Sort.Model)
        | "save_model" => Sort.To (Sort.Product [Sort.Model, Sort.String], Sort.Void)
+    
+       | "print" => Sort.To (Sort.Any, Sort.Void)
 
        | _ => empty(id)
   )

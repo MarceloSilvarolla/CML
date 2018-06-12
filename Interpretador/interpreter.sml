@@ -129,7 +129,6 @@ struct
   and typeCheckDecOrCmd(DataTypes.DecNotCmd dec)(localEnv, globalEnv) (returnSrt) = typeCheckDec(dec) (localEnv, globalEnv)
   |   typeCheckDecOrCmd(DataTypes.CmdNotDec cmd)(localEnv, globalEnv) (returnSrt) = typeCheckC(cmd)(localEnv, globalEnv)(returnSrt)
 
-  (* TODO: trocar uns emptyEnv por initialEnv !!!!!!!! *)
   and typeCheckC(DataTypes.CompCmd (decOrCmdList))(localEnv, globalEnv)(returnSrt) =
     (foldl
       (fn (decOrCmd, (localEnv, globalEnv)) => typeCheckDecOrCmd(decOrCmd) (localEnv, globalEnv) (returnSrt))
@@ -707,7 +706,7 @@ struct
                 )
         |   _ => raise InvalidTypeInLogicalOperationBug
         )
-    (* TODO: implementar igualdades permitidas pelo typify acima (string versus string, etc.) *)
+
     |   E(DataTypes.EqExp (exp_1, exp_2)) (env, sto) =
         let
           val (sto_1, expVal_1) = E(exp_1)(env,sto)
@@ -757,7 +756,7 @@ struct
                 |   (sto_f, ExpressibleValue.String stringVal_2) => (sto_f, ExpressibleValue.Bool (stringVal_1 = stringVal_2))
                 |   _ => raise IncomparableTypesBug
                 )
-        (*TODO: comparações entre datasets, models e arrays?*)
+        (* comparações entre datasets, models e arrays?*)
         |   _ => raise InvalidTypeInComparisonBug
         )*)
 
@@ -767,7 +766,7 @@ struct
         in
             (sto_f, ExpressibleValue.Bool (not(boolVal)))
         end
-    (* TODO: implementar comparações especificadas pelo typify (como string versus string, etc.) *)
+
     |   E(DataTypes.LtExp (exp_1, exp_2)) (env, sto) =
         let
           val (sto_1, expVal_1) = E(exp_1)(env,sto)
@@ -802,7 +801,6 @@ struct
         |   _ => raise InvalidTypeInComparisonBug
         )*)
 
-    (* TODO: implementar comparações especificadas pelo typify (como string versus string, etc.) *)
     |   E(DataTypes.LeExp (exp_1, exp_2)) (env, sto) =
         let
           val (sto_1, expVal_1) = E(exp_1)(env,sto)
