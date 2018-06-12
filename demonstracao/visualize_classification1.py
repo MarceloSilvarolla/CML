@@ -18,6 +18,9 @@ plt.show()
 pos = dataset.iloc[np.where(predictions['y'] > 0)]
 neg = dataset.iloc[np.where(predictions['y'] < 0)]
 
+plt.xlabel('x1')
+plt.ylabel('x2')
+
 plt.scatter(pos['x1'], pos['x2'], color='green')
 plt.scatter(neg['x1'], neg['x2'], color='blue')
 

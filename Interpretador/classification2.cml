@@ -1,0 +1,18 @@
+string path = "../demonstracao/classification2.csv";
+
+int main(){
+  dataset D = load_data(path, ',');
+
+  dataset X = columns(D, {"x1", "x2"});
+  dataset y = columns(D, {"color"});
+
+  model PP = pocket_perceptron(X, y, 1000);
+  save_model(PP, "PP.model");
+
+  PP = load_model("PP.model");
+  dataset predictions = predict(X, PP);
+
+  save_data(predictions, "../demonstracao/classification2_output.csv", ',');
+
+  return 0;
+}

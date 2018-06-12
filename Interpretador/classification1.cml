@@ -1,0 +1,16 @@
+string path = "../demonstracao/classification1.csv";
+
+int main(){
+  dataset D = load_data(path, ',');
+
+  dataset X = remove_columns(D, {"y"});
+  dataset y = columns(D, {"y"});
+
+  model P = perceptron(X, y, 1000);
+  save_model(P, "P.model");
+
+  dataset predictions = predict(X, P);
+  save_data(predictions, "../demonstracao/classification1_output.csv", ',');
+
+  return 0;
+}
