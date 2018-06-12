@@ -1,0 +1,26 @@
+string filename = "../demonstracao/classification1.csv";
+
+int main(){
+  dataset d = load_data(filename, ',');
+  dataset x = remove_columns(d, {"y"});
+  dataset y = columns(d, {"y"});
+
+  model P = pocket_perceptron(x, y, 10000);
+  dataset predictions = predict(x, P);
+  save_data(predictions, "predictions.csv", ',');
+
+  save_model(P, "P.model");
+
+
+  return 0;
+}
+
+int tmp(){
+
+  dataset x = columns(d, {"x_1", "x_2"});
+  dataset y = remove_columns(d, {"x_1", "x_2"});
+
+  save_data(x, "robson_x.csv", ',');
+  save_data(y, "robson_y.csv", ',');
+
+}
