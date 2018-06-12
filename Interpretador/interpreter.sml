@@ -35,7 +35,7 @@ struct
   exception ArrayElementsOfInconsistentTypes
   (* 1: parsing (using MLLex and MLYacc) *)
   fun parse (fileName:string):DataTypes.Prog =
-  let 
+  let
     val inStream = TextIO.openIn fileName
     val grab : int -> string = fn
         n => if TextIO.endOfStream inStream
@@ -119,7 +119,7 @@ struct
       (newLocalEnv, newGlobalEnv)
     end
 
-  and typeCheckDef(DataTypes.FunDef (typeSpec, _, _, cmd)) (localEnv, globalEnv) = 
+  and typeCheckDef(DataTypes.FunDef (typeSpec, _, _, cmd)) (localEnv, globalEnv) =
     typeCheckC(cmd)(localEnv, globalEnv)(Sort.typeSpecSort(typeSpec))
 
   and typeCheckDecOrCmd(DataTypes.DecNotCmd dec)(localEnv, globalEnv) (returnSrt) = typeCheckDec(dec) (localEnv, globalEnv)
@@ -127,13 +127,13 @@ struct
 
   (* TODO: trocar uns emptyEnv por initialEnv !!!!!!!! *)
   and typeCheckC(DataTypes.CompCmd (decOrCmdList))(localEnv, globalEnv)(returnSrt) =
-    (foldl 
+    (foldl
       (fn (decOrCmd, (localEnv, globalEnv)) => typeCheckDecOrCmd(decOrCmd) (localEnv, globalEnv) (returnSrt))
       (LocalTypeEnv.empty, globalEnv)
       decOrCmdList)
   |   typeCheckC(DataTypes.ExpCmd NONE)(localEnv, globalEnv)(returnSrt) = (localEnv, globalEnv)
   |   typeCheckC(DataTypes.ExpCmd (SOME exp))(localEnv, globalEnv)(returnSrt) = (typify(exp)(globalEnv);(localEnv, globalEnv))
-  |   typeCheckC(DataTypes.SelCmd (exp, cmd, NONE)) (localEnv, globalEnv)(returnSrt) = 
+  |   typeCheckC(DataTypes.SelCmd (exp, cmd, NONE)) (localEnv, globalEnv)(returnSrt) =
     let
       val _ = (case typify(exp)(globalEnv) of
         Sort.Bool => () | _ => raise InvalidTypeInLogicalOperation)
@@ -159,16 +159,16 @@ struct
       (localEnv, globalEnv)
     end
   |   typeCheckC(DataTypes.JumpCmd (NONE)) (localEnv, globalEnv) (returnSrt) = (localEnv, globalEnv)
-  |   typeCheckC(DataTypes.JumpCmd (SOME exp)) (localEnv, globalEnv) (returnSrt) = 
-    let 
+  |   typeCheckC(DataTypes.JumpCmd (SOME exp)) (localEnv, globalEnv) (returnSrt) =
+    let
       val expSrt = typify(exp)(globalEnv)
       val _ = Sort.commonSort(expSrt, returnSrt)
     in
-      (localEnv, globalEnv) 
+      (localEnv, globalEnv)
     end
-  
+
   |   typeCheckC(DataTypes.Skip) (localEnv, globalEnv) (returnSrt) = (localEnv, globalEnv)
-    
+
   and typify(DataTypes.LitExp litExp)(globalEnv):Sort.sort  =
     (case litExp of
       DataTypes.IntLit intLit => Sort.Int
@@ -269,7 +269,7 @@ struct
 
   |   typify(DataTypes.IdOrArrAccessExp (DataTypes.Id id, expList)) (globalEnv) =
     let
-      val _ = 
+      val _ =
         (case Sort.commonSortList(map (fn exp => typify(exp)(globalEnv)) expList) of
           Sort.Int => ()
         | _ => raise InvalidTypeInArrayAccessIndex
@@ -279,7 +279,7 @@ struct
           (_, []) => arrSrt
         | (Sort.Array srt, exp::exps) => arrAccessType(srt, exps)
         | _ => raise TooManyIndicesInArrayAccess
-        ) 
+        )
     in
       arrAccessType( GlobalTypeEnv.apply(globalEnv, DataTypes.Id id), expList )
     end
@@ -291,21 +291,21 @@ struct
     in
       Sort.commonSort(expSrt, arrAccessSrt)
     end
-  
-  |   typify(DataTypes.UMinusExp exp) (globalEnv) = 
+
+  |   typify(DataTypes.UMinusExp exp) (globalEnv) =
     let val expSrt = typify(exp) (globalEnv) in
-      case expSrt of 
+      case expSrt of
         Sort.Int => expSrt
       | Sort.Real => expSrt
       |  _ => raise InvalidTypeInArithmeticOperation
     end
-  
+
   |   typify(DataTypes.AddExp (exp_1, exp_2)) (globalEnv) =
-     let 
+     let
        val exp_1Srt = typify(exp_1) (globalEnv)
        val exp_2Srt = typify(exp_2) (globalEnv)
        in
-       case (exp_1Srt, exp_2Srt) of 
+       case (exp_1Srt, exp_2Srt) of
          (Sort.Int, Sort.Int) => (Sort.Int)
        | (Sort.Int, Sort.Real) => (Sort.Real)
        | (Sort.Real, Sort.Int) => (Sort.Real)
@@ -314,11 +314,11 @@ struct
      end
 
   |   typify(DataTypes.SubExp (exp_1, exp_2)) (globalEnv) =
-     let 
+     let
        val exp_1Srt = typify(exp_1) (globalEnv)
        val exp_2Srt = typify(exp_2) (globalEnv)
        in
-       case (exp_1Srt, exp_2Srt) of 
+       case (exp_1Srt, exp_2Srt) of
          (Sort.Int, Sort.Int) => (Sort.Int)
        | (Sort.Int, Sort.Real) => (Sort.Real)
        | (Sort.Real, Sort.Int) => (Sort.Real)
@@ -327,24 +327,24 @@ struct
      end
 
   |   typify(DataTypes.MultExp (exp_1, exp_2)) (globalEnv) =
-    let 
+    let
       val exp_1Srt = typify(exp_1) (globalEnv)
       val exp_2Srt = typify(exp_2) (globalEnv)
       in
-      case (exp_1Srt, exp_2Srt) of 
+      case (exp_1Srt, exp_2Srt) of
          (Sort.Int, Sort.Int) => (Sort.Int)
        | (Sort.Int, Sort.Real) => (Sort.Real)
        | (Sort.Real, Sort.Int) => (Sort.Real)
        | (Sort.Real, Sort.Real) => (Sort.Real)
       |  _ => raise InvalidTypeInArithmeticOperation
     end
-   
+
  |   typify(DataTypes.DivExp (exp_1, exp_2)) (globalEnv) =
-    let 
+    let
       val exp_1Srt = typify(exp_1) (globalEnv)
       val exp_2Srt = typify(exp_2) (globalEnv)
       in
-      case (exp_1Srt, exp_2Srt) of 
+      case (exp_1Srt, exp_2Srt) of
          (Sort.Int, Sort.Int) => (Sort.Int)
        | (Sort.Int, Sort.Real) => (Sort.Real)
        | (Sort.Real, Sort.Int) => (Sort.Real)
@@ -670,13 +670,23 @@ struct
         |   _ => raise InvalidTypeInLogicalOperationBug
         )
     (* TODO: implementar igualdades permitidas pelo typify acima (string versus string, etc.) *)
-    (*|   E(DataTypes.EqExp (exp_1, exp_2)) (env, sto) =
+    |   E(DataTypes.EqExp (exp_1, exp_2)) (env, sto) =
         let
           val (sto_1, expVal_1) = E(exp_1)(env,sto)
           val (sto_f, expVal_2) = E(exp_2)(env,sto_1)
         in
-        end*)
-        (case E(exp_1)(env,sto) of
+            case (expVal_1, expVal_2) of
+                (ExpressibleValue.Int intVal_1, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (intVal_1 = intVal_2))
+            |   (ExpressibleValue.Int intVal_1, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (Real.==(Real.fromInt(intVal_1), realVal_2)))
+            |   (ExpressibleValue.Real realVal_1, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (Real.==(realVal_1, Real.fromInt(intVal_2))))
+            |   (ExpressibleValue.Real realVal_1, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (Real.==(realVal_1, realVal_2)))
+            |   (ExpressibleValue.Bool boolVal_1, ExpressibleValue.Bool boolVal_2) => (sto_f, ExpressibleValue.Bool (boolVal_1 = boolVal_2))
+            |   (ExpressibleValue.Char charVal_1, ExpressibleValue.Char charVal_2) => (sto_f, ExpressibleValue.Bool (charVal_1 = charVal_2))
+            |   (ExpressibleValue.Bool boolVal_1, ExpressibleValue.Bool boolVal_2) => (sto_f, ExpressibleValue.Bool (boolVal_1 = boolVal_2))
+            |   (ExpressibleValue.String stringVal_1, ExpressibleValue.String stringVal_2) => (sto_f, ExpressibleValue.Bool (stringVal_1 = stringVal_2))
+            |   _ => raise IncomparableTypesBug
+        end
+        (*(case E(exp_1)(env,sto) of
             (sto_1, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
         |   (sto_1, ExpressibleValue.Int intVal_1) =>
                 (case E(exp_2)(env,sto_1) of
@@ -712,7 +722,7 @@ struct
                 )
         (*TODO: comparações entre datasets, models e arrays?*)
         |   _ => raise InvalidTypeInComparisonBug
-        )
+        )*)
 
     |   E(DataTypes.NeExp (exp_1, exp_2)) (env, sto) =
         let
@@ -722,7 +732,21 @@ struct
         end
     (* TODO: implementar comparações especificadas pelo typify (como string versus string, etc.) *)
     |   E(DataTypes.LtExp (exp_1, exp_2)) (env, sto) =
-        (case E(exp_1)(env,sto) of
+        let
+          val (sto_1, expVal_1) = E(exp_1)(env,sto)
+          val (sto_f, expVal_2) = E(exp_2)(env,sto_1)
+        in
+            case (expVal_1, expVal_2) of
+                (ExpressibleValue.Int intVal_1, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (intVal_1 < intVal_2))
+            |   (ExpressibleValue.Int intVal_1, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (intVal_1 < realVal_2))
+            |   (ExpressibleValue.Real realVal_1, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (realVal_1 < intVal_2))
+            |   (ExpressibleValue.Real realVal_1, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (realVal_1 < realVal_2))
+            |   (ExpressibleValue.Bool boolVal_1, ExpressibleValue.Bool boolVal_2) => (sto_f, ExpressibleValue.Bool (boolVal_1 < boolVal_2))
+            |   (ExpressibleValue.Char charVal_1, ExpressibleValue.Char charVal_2) => (sto_f, ExpressibleValue.Bool (charVal_1 < charVal_2))
+            |   (ExpressibleValue.String stringVal_1, ExpressibleValue.String stringVal_2) => (sto_f, ExpressibleValue.Bool (stringVal_1 < stringVal_2))
+            |   _ => raise IncomparableTypesBug
+        end
+        (*(case E(exp_1)(env,sto) of
             (sto_1, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
         |   (sto_1, ExpressibleValue.Int intVal_1) =>
                 (case E(exp_2)(env,sto_1) of
@@ -739,11 +763,25 @@ struct
                 |   _ => raise InvalidTypeInComparisonBug
                 )
         |   _ => raise InvalidTypeInComparisonBug
-        )
+        )*)
 
     (* TODO: implementar comparações especificadas pelo typify (como string versus string, etc.) *)
     |   E(DataTypes.LeExp (exp_1, exp_2)) (env, sto) =
-        (case E(exp_1)(env,sto) of
+        let
+          val (sto_1, expVal_1) = E(exp_1)(env,sto)
+          val (sto_f, expVal_2) = E(exp_2)(env,sto_1)
+        in
+            case (expVal_1, expVal_2) of
+                (ExpressibleValue.Int intVal_1, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (intVal_1 <= intVal_2))
+            |   (ExpressibleValue.Int intVal_1, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (intVal_1 <= realVal_2))
+            |   (ExpressibleValue.Real realVal_1, ExpressibleValue.Int intVal_2) => (sto_f, ExpressibleValue.Bool (realVal_1 <= intVal_2))
+            |   (ExpressibleValue.Real realVal_1, ExpressibleValue.Real realVal_2) => (sto_f, ExpressibleValue.Bool (realVal_1 <= realVal_2))
+            |   (ExpressibleValue.Bool boolVal_1, ExpressibleValue.Bool boolVal_2) => (sto_f, ExpressibleValue.Bool (boolVal_1 <= boolVal_2))
+            |   (ExpressibleValue.Char charVal_1, ExpressibleValue.Char charVal_2) => (sto_f, ExpressibleValue.Bool (charVal_1 <= charVal_2))
+            |   (ExpressibleValue.String stringVal_1, ExpressibleValue.String stringVal_2) => (sto_f, ExpressibleValue.Bool (stringVal_1 <= stringVal_2))
+            |   _ => raise IncomparableTypesBug
+        end
+        (*(case E(exp_1)(env,sto) of
             (sto_1, ExpressibleValue.VoidValue) => raise InvalidTypeInComparisonBug
         |   (sto_1, ExpressibleValue.Int intVal_1) =>
                 (case E(exp_2)(env,sto_1) of
@@ -760,7 +798,7 @@ struct
                 |   _ => raise InvalidTypeInComparisonBug
                 )
         |   _ => raise InvalidTypeInComparisonBug
-        )
+        )*)
 
     |   E(DataTypes.GtExp (exp_1, exp_2)) (env, sto) =
         let
