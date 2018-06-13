@@ -122,18 +122,22 @@ struct
   and typeCheckDef(DataTypes.FunDef (typeSpec, _, params, cmd)) (localEnv, globalEnv) =
     let
       val (newLocalEnv, newGlobalEnv) = typeCheckDecList(params)(localEnv, globalEnv)
+      val _ = typeCheckC(cmd)(newLocalEnv, newGlobalEnv)(Sort.typeSpecSort(typeSpec))
     in
-      typeCheckC(cmd)(newLocalEnv, newGlobalEnv)(Sort.typeSpecSort(typeSpec))
+      (localEnv, globalEnv)
     end
 
   and typeCheckDecOrCmd(DataTypes.DecNotCmd dec)(localEnv, globalEnv) (returnSrt) = typeCheckDec(dec) (localEnv, globalEnv)
   |   typeCheckDecOrCmd(DataTypes.CmdNotDec cmd)(localEnv, globalEnv) (returnSrt) = typeCheckC(cmd)(localEnv, globalEnv)(returnSrt)
 
   and typeCheckC(DataTypes.CompCmd (decOrCmdList))(localEnv, globalEnv)(returnSrt) =
-    (foldl
+    let val _ = (foldl
       (fn (decOrCmd, (localEnv, globalEnv)) => typeCheckDecOrCmd(decOrCmd) (localEnv, globalEnv) (returnSrt))
       (LocalTypeEnv.initial, globalEnv)
       decOrCmdList)
+    in
+      (localEnv, globalEnv)
+    end
   |   typeCheckC(DataTypes.ExpCmd NONE)(localEnv, globalEnv)(returnSrt) = (localEnv, globalEnv)
   |   typeCheckC(DataTypes.ExpCmd (SOME exp))(localEnv, globalEnv)(returnSrt) = (typify(exp)(globalEnv);(localEnv, globalEnv))
   |   typeCheckC(DataTypes.SelCmd (exp, cmd, NONE)) (localEnv, globalEnv)(returnSrt) =
@@ -973,7 +977,8 @@ struct
   and interpret(fileName:string):unit =
         let
           val parseTree = parse(fileName)
-          val _ = typeCheck(parseTree)
+          val (localEnv, globalEnv) = typeCheck(parseTree)
+          (*val _ = print("-----localEnv-----\n")*)
         in run(parseTree)
         end
         handle ParseError => ()
