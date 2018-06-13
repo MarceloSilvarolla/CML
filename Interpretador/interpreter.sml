@@ -120,7 +120,7 @@ struct
   and  typeCheckDecList(decList)(localEnv, globalEnv) =
     foldl (fn (dec, (localEnv, globalEnv)) => typeCheckDec(dec)(localEnv, globalEnv)) (localEnv, globalEnv) decList
   and typeCheckDef(DataTypes.FunDef (typeSpec, _, params, cmd)) (localEnv, globalEnv) =
-    let 
+    let
       val (newLocalEnv, newGlobalEnv) = typeCheckDecList(params)(localEnv, globalEnv)
     in
       typeCheckC(cmd)(newLocalEnv, newGlobalEnv)(Sort.typeSpecSort(typeSpec))
@@ -519,7 +519,7 @@ struct
                 val strs = String.tokens (fn ch => ch = #"\"") str
                 fun join_strs(strs) = if length(strs) = 0 then "" else "\"" ^ hd(strs) ^ join_strs(tl(strs))
             in
-                hd(strs) ^ join_strs(tl(strs))
+                if length(strs) = 0 then "" else hd(strs) ^ join_strs(tl(strs))
             end
     in
       (case lit of
