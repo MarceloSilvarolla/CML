@@ -416,10 +416,12 @@ struct
             val (env_2, sto_2) = P2(parseTree)(env_1, Store.empty)
             val (env_f, sto_3) = P3(parseTree)(env_2, Store.empty)
             val main = Env.apply(env_f, DataTypes.Id "main")
-            val _ = Env.printEnv(env_f)
+            val _ = Env.printFullEnv(env_f)
             val _ = Store.printStore(sto_3)
             val _ = print("Vou executar o main!\n")
-            val (sto_f, ExpressibleValue.Int mainReturn) = E(DataTypes.AppExp (DataTypes.Id "main", []))(env_f, sto_3)
+            val (sto_f,  originalMainReturn) = E(DataTypes.AppExp (DataTypes.Id "main", []))(env_f, sto_3)
+            val _ = case originalMainReturn of ExpressibleValue.Int mainReturn => () | _ => print(Sort.expValSortAsString(originalMainReturn))
+            val ExpressibleValue.Int mainReturn = originalMainReturn
         in
             (print("...Program finished with exit code " ^ Int.toString(mainReturn) ^ "\n");mainReturn)
         end
@@ -500,7 +502,7 @@ struct
             val (sto_f,loc) = Store.allocate(sto)
             val env_f = Env.extend(env,DataTypes.Id id, DenotableValue.Location loc)
           in
-            ( Env.printEnv(env_f) ; Store.printStore(sto_f) ; (env_f,sto_f) )
+            ( Env.printFullEnv(env_f) ; Store.printStore(sto_f) ; (env_f,sto_f) )
           end
 
   |   Dec(DataTypes.Dec (typeSpec, DataTypes.Id id, SOME exp))(env,sto):environment*store =
@@ -513,7 +515,7 @@ struct
             (*val ExpressibleValue.Int intExpVal = expVal
             val _ = print(Int.toString(intExpVal) ^ "\n")*)
           in
-            ( Env.printEnv(env_f) ; Store.printStore(sto_f) ; (env_f,sto_f) )
+            ( Env.printFullEnv(env_f) ; Store.printStore(sto_f) ; (env_f,sto_f) )
           end
 
   and E(DataTypes.LitExp lit)(env,sto):store*expressibleValue =

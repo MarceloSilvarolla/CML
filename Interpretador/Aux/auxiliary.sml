@@ -339,7 +339,9 @@ struct
     | l =>
       fun c(
     )*)
- 
+  fun toFullString(env):string =
+    String.concatWith(" ")(map toStringPair env)
+
   fun toString(env):string =
     let 
       val envWithoutPredefinedFunctions = List.rev (List.drop ( (List.rev env), List.length initial ))
@@ -349,8 +351,13 @@ struct
       val envWPFAndNoRep = remRep(envWithoutPredefinedFunctions)
     in String.concatWith(" ")(map toStringPair envWPFAndNoRep)
     end
+  
+  fun printFullEnv(env):unit =
+    (print(toFullString(env)); print("\n"))
+
   fun printEnv(env):unit =
     (print(toString(env)); print("\n"))
+
 end
 
 structure Sort =
@@ -413,6 +420,19 @@ struct
 
   fun commonSortList(sorts):sort =
     foldl (fn (srt, accSrt) => commonSort(srt, accSrt)) Any sorts
+
+  fun expValSortAsString(expVal) =
+    (case expVal of
+      ExpressibleValue.Int _ => "int"
+    | ExpressibleValue.Real _ => "real"
+    | ExpressibleValue.Bool _ => "bool"
+    | ExpressibleValue.Char _ => "char"
+    | ExpressibleValue.String _ => "string"
+    | ExpressibleValue.Dataset _ => "dataset"
+    | ExpressibleValue.Model _ => "model"
+    | ExpressibleValue.ArrayValue arrVal => "array" (* TODO: melhorar *)
+    | ExpressibleValue.VoidValue => "void"
+    )
 
 end
 
