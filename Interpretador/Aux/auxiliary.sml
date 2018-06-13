@@ -285,6 +285,12 @@ struct
 
   fun printAny([loc], sto) =
     (print(anyToString([loc], sto)); (sto, ExpressibleValue.VoidValue))
+  |   printAny(_) = raise InvalidPrintArgumentBug
+
+  fun printlnAny([loc], sto) =
+    (print(anyToString([loc], sto)); print("\n"); (sto, ExpressibleValue.VoidValue))
+  |   printlnAny(_) = raise InvalidPrintArgumentBug
+
 end
 
 structure Env =
@@ -313,6 +319,7 @@ struct
        | "save_model" => DenotableValue.Function LearningAuxBridge.save_model
        
        | "print" => DenotableValue.Function Print.printAny
+       | "println" => DenotableValue.Function Print.printlnAny
        | _ => empty(id)
   )
 
@@ -430,7 +437,8 @@ struct
        | "save_model" => Sort.To (Sort.Product [Sort.Model, Sort.String], Sort.Void)
     
        | "print" => Sort.To (Sort.Any, Sort.Void)
-
+       | "println" => Sort.To (Sort.Any, Sort.Void)
+       (*| "printEnv" => Sort.To (Sort.Product [], Sort.Void)*)
        | _ => empty(id)
   )
   fun extend(env,DataTypes.Id id, srt):environment =

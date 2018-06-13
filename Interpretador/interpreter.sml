@@ -862,9 +862,6 @@ struct
           val DenotableValue.Function f = Env.apply(env, DataTypes.Id id)
           handle Bind => raise NonFunctionApplicationBug
           val (sto_f,retVal) = f([], sto)
-
-          (*val ExpressibleValue.Int intRetVal = retVal
-          val _ = print("intRetVal = " ^ Int.toString(intRetVal) ^ "\n")*)
         in
           (sto_f, retVal)
         end
