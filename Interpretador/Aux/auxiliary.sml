@@ -297,38 +297,38 @@ structure Env =
 struct
   type Id = DataTypes.Id
   type denotableValue = DenotableValue.denotableValue
-  type environment = Id -> denotableValue
-  fun empty(id) = DenotableValue.Unbound
-  fun apply(env, DataTypes.Id id) = env(DataTypes.Id id)
-  fun initial(DataTypes.Id id) = (
-      case id of
-	  "load_data" => DenotableValue.Function LearningAuxBridge.load_data
-       |  "save_data" => DenotableValue.Function LearningAuxBridge.save_data
-       |  "columns" => DenotableValue.Function LearningAuxBridge.columns
-       | "remove_columns"  => DenotableValue.Function LearningAuxBridge.remove_columns
-       | "rows" => DenotableValue.Function LearningAuxBridge.rows
-       | "num_rows" => DenotableValue.Function LearningAuxBridge.num_rows
+  type environment = (Id * denotableValue) list
+  val empty = []
+  fun apply([]:environment, DataTypes.Id id) = DenotableValue.Unbound
+  |   apply((DataTypes.Id id1, denVal)::envTail, DataTypes.Id id) =
+    if id1 = id then denVal else apply(envTail, DataTypes.Id id)
+  val initial:environment = [
+	 (DataTypes.Id "load_data", DenotableValue.Function LearningAuxBridge.load_data), 
+         (DataTypes.Id "save_data" , DenotableValue.Function LearningAuxBridge.save_data), 
+         (DataTypes.Id "columns" , DenotableValue.Function LearningAuxBridge.columns), 
+         (DataTypes.Id "remove_columns"  , DenotableValue.Function LearningAuxBridge.remove_columns), 
+         (DataTypes.Id "rows" , DenotableValue.Function LearningAuxBridge.rows), 
+         (DataTypes.Id "num_rows" , DenotableValue.Function LearningAuxBridge.num_rows), 
 
-       | "perceptron" => DenotableValue.Function LearningAuxBridge.perceptron
-       | "pocket_perceptron" => DenotableValue.Function LearningAuxBridge.pocket_perceptron
-       | "logistic_regression" => DenotableValue.Function LearningAuxBridge.logistic_regression
-       | "linear_regression" => DenotableValue.Function LearningAuxBridge.linear_regression
+         (DataTypes.Id "perceptron" , DenotableValue.Function LearningAuxBridge.perceptron), 
+         (DataTypes.Id "pocket_perceptron" , DenotableValue.Function LearningAuxBridge.pocket_perceptron),
+         (DataTypes.Id "logistic_regression" , DenotableValue.Function LearningAuxBridge.logistic_regression),
+         (DataTypes.Id "linear_regression" , DenotableValue.Function LearningAuxBridge.linear_regression),
 
-       | "predict" => DenotableValue.Function LearningAuxBridge.predict
-       | "load_model" => DenotableValue.Function LearningAuxBridge.load_model
-       | "save_model" => DenotableValue.Function LearningAuxBridge.save_model
+         (DataTypes.Id "predict" , DenotableValue.Function LearningAuxBridge.predict),
+         (DataTypes.Id "load_model" , DenotableValue.Function LearningAuxBridge.load_model),
+         (DataTypes.Id "save_model" , DenotableValue.Function LearningAuxBridge.save_model),
        
-       | "print" => DenotableValue.Function Print.printAny
-       | "println" => DenotableValue.Function Print.printlnAny
-       | _ => empty(id)
-  )
+         (DataTypes.Id "print" , DenotableValue.Function Print.printAny),
+         (DataTypes.Id "println" , DenotableValue.Function Print.printlnAny)
+  ]
 
   fun extend(env:environment,DataTypes.Id
-    id:DataTypes.Id,denVal:denotableValue)(DataTypes.Id id1:DataTypes.Id):denotableValue =
-      if id1 = id then denVal else env(DataTypes.Id id1)
+    id,denVal:denotableValue) = 
+      (DataTypes.Id id, denVal) :: env
 
-  fun toStringAt(env, DataTypes.Id id):string =
-    (case env(DataTypes.Id id) of
+  fun toStringPair(DataTypes.Id id, denVal):string =
+    (case denVal of
       DenotableValue.Location loc => "(" ^ id ^ ": " ^ Int.toString(loc) ^ ")"
     | DenotableValue.Function f => "(" ^ id ^ ": function)"
     | DenotableValue.Unbound => ""
@@ -339,12 +339,15 @@ struct
     | l =>
       fun c(
     )*)
+ 
   fun toString(env):string =
-    let
-      val completeEnv = (List.tabulate(256, fn n => toStringAt(env, DataTypes.Id (String.str(Char.chr(n))))))
-      val onlyNonEmpty = List.filter (fn s => not (s = "")) completeEnv
-    in
-      String.concatWith(" ")(onlyNonEmpty)
+    let 
+      val envWithoutPredefinedFunctions = List.rev (List.drop ( (List.rev env), List.length initial ))
+      fun sameId((DataTypes.Id id1, _), (DataTypes.Id id2, _)) = (id1 = id2)
+      fun remRep([]) = []
+      |   remRep(p::ps) = p::(List.filter (fn q => not (sameId (p, q))) (remRep ps))
+      val envWPFAndNoRep = remRep(envWithoutPredefinedFunctions)
+    in String.concatWith(" ")(map toStringPair envWPFAndNoRep)
     end
   fun printEnv(env):unit =
     (print(toString(env)); print("\n"))

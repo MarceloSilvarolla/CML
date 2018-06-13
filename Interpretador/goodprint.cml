@@ -10,6 +10,7 @@ dataset getRelevantMovies(dataset movies){
 
 
 int main() {
+   string str = " ";
    string file_name = "movies.csv";
    int[][] v = {{42}, {}, {1337, 1729}};
    println(v);
