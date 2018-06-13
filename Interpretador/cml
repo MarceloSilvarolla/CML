@@ -1,0 +1,3 @@
+#!/bin/bash
+
+echo "CM.make \"CML.cm\"; CML.interpret \"$1\""  | sml 

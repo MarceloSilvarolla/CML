@@ -1,19 +1,13 @@
 int x = 1;
 int y = 6 + 6;
 
-
-
-
-
-
-
-
 int main() {
   x = 2;
+  int y = y;
   if(true) {
-    int y = f() + y;
+    y = f() + y;
   } else {
-    int y = f() * y;
+    y = f() * y;
   }
   return y;
 }

@@ -38,19 +38,28 @@ structure Store =
 struct
   type location = Location.location
   type storableValue = StorableValue.storableValue
-  val Unused = StorableValue.Unused
-  val Undefined = StorableValue.Undefined
 
-  type store = location->storableValue
+  type store = storableValue list
 
+  val empty = []
+  
+  exception InvalidLocationInStoreUpdateBug
+  exception InvalidLocationInStoreApplyBug
+  fun updateAux([]:store, loc:location, stoVal:storableValue, i:int) = raise InvalidLocationInStoreUpdateBug
+  |   updateAux((stoVal1 :: stoTail):store, loc:location, stoVal:storableValue, i:int) =
+       (*(let
+          val StorableValue.Int x = stoVal
+          val _  = print(Int.toString(x))
+       in*)
+    if i = loc then stoVal :: stoTail else stoVal1 :: updateAux(stoTail, loc, stoVal, i+1)
+(*end)*)
+  
+  fun update(sto:store,loc:location,stoVal:storableValue) = 
+    ((*print("update(sto, loc, stoVal), onde loc = " ^ Int.toString(loc) ^ "\n") ;*) updateAux(sto, loc, stoVal, 0))
 
-  fun empty(loc:location):storableValue = Unused
+  fun apply(sto:store, loc:location):storableValue =
+    if loc < length(sto) then List.nth(sto, loc) else raise InvalidLocationInStoreApplyBug
 
-  fun
-    update(sto:store,loc:location,stoVal:storableValue)(loc1:location):storableValue =
-      if loc1 = loc then stoVal else sto(loc1)
-
-  fun apply(sto:store,loc:location):storableValue = sto(loc)
   exception NonStorableExpressible
   fun expressibleToStorable(expVal) =
     case expVal of
@@ -76,37 +85,50 @@ struct
     | StorableValue.ArrayValue arrayVal => ExpressibleValue.ArrayValue arrayVal
     | _ => raise nonExpressibleStorable
     )
-  fun allocate(sto:store):store*location =
-  let
-    fun leastUnusedLocationAfter(loc:location):location =
-      case sto(loc) of
-          StorableValue.Unused => loc
-        | _      =>  let val loc = leastUnusedLocationAfter(loc+1)
-                     in loc
-                     end
-    val loc = leastUnusedLocationAfter(0)
-  in
-    (update(sto,loc,Undefined),loc)
-  end
 
-  fun deallocate(sto:store,loc:location):store = update(sto,loc,Unused)
-  fun printStore(sto):unit =
+  fun allocateAux([]:store, i:int):store*location = ((StorableValue.Undefined) :: [], i)
+  |   allocateAux(((StorableValue.Unused)::stoTail):store, i:int) = ((StorableValue.Undefined) :: stoTail, i)
+  |   allocateAux((stoVal :: stoTail):store, i:int) =
+        let
+          val (allocTail, locRet) = allocateAux(stoTail, i+1);
+        in
+          (stoVal :: allocTail, locRet)
+        end
+
+  fun allocate(sto:store) = allocateAux(sto, 0)
+  
+  exception InvalidLocationInStoreDeallocate
+  fun deallocateAux([]:store, loc:location, i:int) = raise InvalidLocationInStoreDeallocate
+  |   deallocateAux((StorableValue.Unused) :: stoTail, loc, i) = 
+    if i = loc 
+    then raise InvalidLocationInStoreDeallocate
+    else (StorableValue.Unused) :: deallocateAux(stoTail, loc, i+1)
+  |   deallocateAux(stoVal :: stoTail, loc, i) =
+    if i = loc
+    then (StorableValue.Unused) :: stoTail
+    else stoVal :: deallocateAux(stoTail, loc, i+1)
+  
+
+  fun deallocate(sto:store,loc:location):store = deallocateAux(sto, loc, 0)
+
+  fun printStore(sto, verb):unit = 
     let
-      fun printStoreFrom(sto, loc) =
-        (case sto(loc) of
-          StorableValue.Int x => (print("[" ^ Int.toString(loc) ^ ": " ^ Int.toString(x) ^ "] "); printStoreFrom(sto, loc+1))
-        | StorableValue.Real x => (print("[" ^ Int.toString(loc) ^ ": " ^ Real.toString(x) ^ "] "); printStoreFrom(sto, loc+1))
-        | StorableValue.Bool x => (print("[" ^ Int.toString(loc) ^ ": " ^ (if x then "true" else "false") ^ "] "); printStoreFrom(sto, loc+1))
-        | StorableValue.Char x => (print("[" ^ Int.toString(loc) ^ ": " ^ Char.toString(x) ^ "] "); printStoreFrom(sto, loc+1))
-        | StorableValue.String x => (print("[" ^ Int.toString(loc) ^ ": " ^ x ^ "] "); printStoreFrom(sto, loc+1))
-        | StorableValue.Dataset x => (print("[" ^ Int.toString(loc) ^ ": " ^ "dataset" ^ "] "); printStoreFrom(sto, loc+1))
-        | StorableValue.Model x => (print("[" ^ Int.toString(loc) ^ ": " ^ "model" ^ "] "); printStoreFrom(sto, loc+1))
-        | StorableValue.ArrayValue arr => (print("[" ^ Int.toString(loc) ^ ": " ^ ArrayValue.toString(arr) ^ "] "); printStoreFrom(sto, loc+1))
-        | StorableValue.Unused => (print("\n"); ())
-        | StorableValue.Undefined => (print("[" ^ Int.toString(loc) ^ ": " ^ "undefined" ^ "] "); printStoreFrom(sto, loc+1))
+      fun printStoreFrom([], loc) = print("\n")
+        | printStoreFrom(stoVal :: stoTail, loc) =
+        (case stoVal of
+          StorableValue.Int x => (print("[" ^ Int.toString(loc) ^ ": " ^ Int.toString(x) ^ "] "); printStoreFrom(stoTail, loc+1))
+        | StorableValue.Real x => (print("[" ^ Int.toString(loc) ^ ": " ^ Real.toString(x) ^ "] "); printStoreFrom(stoTail, loc+1))
+        | StorableValue.Bool x => (print("[" ^ Int.toString(loc) ^ ": " ^ (if x then "true" else "false") ^ "] "); printStoreFrom(stoTail, loc+1))
+        | StorableValue.Char x => (print("[" ^ Int.toString(loc) ^ ": " ^ Char.toString(x) ^ "] "); printStoreFrom(stoTail, loc+1))
+        | StorableValue.String x => (print("[" ^ Int.toString(loc) ^ ": " ^ x ^ "] "); printStoreFrom(stoTail, loc+1))
+        | StorableValue.Dataset x => (print("[" ^ Int.toString(loc) ^ ": " ^ "dataset" ^ "] "); printStoreFrom(stoTail, loc+1))
+        | StorableValue.Model x => (print("[" ^ Int.toString(loc) ^ ": " ^ "model" ^ "] "); printStoreFrom(stoTail, loc+1))
+        | StorableValue.ArrayValue arr => (print("[" ^ Int.toString(loc) ^ ": " ^ ArrayValue.toString(arr) ^ "] "); printStoreFrom(stoTail, loc+1))
+        | StorableValue.Unused => ()
+        | StorableValue.Undefined => (print("[" ^ Int.toString(loc) ^ ": " ^ "undefined" ^ "] "); printStoreFrom(stoTail, loc+1))
         )
     in
-      printStoreFrom(sto, 0)
+      if verb > 0 then printStoreFrom(sto, 0) else ()
     end
 
 end
@@ -342,21 +364,18 @@ struct
   fun toFullString(env):string =
     String.concatWith(" ")(map toStringPair env)
 
-  fun toString(env):string =
+  fun toString(env, verb):string =
     let 
-      val envWithoutPredefinedFunctions = List.rev (List.drop ( (List.rev env), List.length initial ))
+      val envMaybeWithoutPredefinedFunctions = if verb < 3 then List.rev (List.drop ( (List.rev env), List.length initial )) else env
       fun sameId((DataTypes.Id id1, _), (DataTypes.Id id2, _)) = (id1 = id2)
       fun remRep([]) = []
       |   remRep(p::ps) = p::(List.filter (fn q => not (sameId (p, q))) (remRep ps))
-      val envWPFAndNoRep = remRep(envWithoutPredefinedFunctions)
-    in String.concatWith(" ")(map toStringPair envWPFAndNoRep)
+      val envMWPFAndNoRep = if verb < 2 then remRep(envMaybeWithoutPredefinedFunctions) else envMaybeWithoutPredefinedFunctions
+    in if verb = 0 then "" else String.concatWith(" ")(map toStringPair envMWPFAndNoRep)
     end
   
-  fun printFullEnv(env):unit =
-    (print(toFullString(env)); print("\n"))
-
-  fun printEnv(env):unit =
-    (print(toString(env)); print("\n"))
+  fun printEnv(env, verb):unit =
+    (print(toString(env, verb)); if verb > 0 then print("\n") else ())
 
 end
 

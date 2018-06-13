@@ -1,8 +1,7 @@
 string filename = "../demonstracao/classification1.csv";
 
 int main(){
-  dataset d = load_data(filename, ',');
-  dataset x = columns(d, {"index"});
+  dataset x = load_data("x.csv", ',');
   save_data(x, "x.csv", ',');
   return 0;
 }

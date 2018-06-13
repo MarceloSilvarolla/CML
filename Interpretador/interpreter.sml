@@ -3,6 +3,7 @@ sig val parse : string -> DataTypes.Prog
     val typeCheck : DataTypes.Prog -> LocalTypeEnv.environment * GlobalTypeEnv.environment
     val run : DataTypes.Prog -> unit
     val interpret : string -> unit
+    val verbosity : int ref
 end =
 struct
   type environment = Env.environment
@@ -11,6 +12,8 @@ struct
   type expressibleValue = ExpressibleValue.expressibleValue
   type returnValue = ExpressibleValue.expressibleValue
   type returnFlag = ReturnFlag.returnFlag
+
+  val verbosity = ref 0
 
   exception ParseError
   exception NonFunctionApplication
@@ -94,7 +97,7 @@ struct
 
   |   typeCheckP2( DataTypes.Prog ((DataTypes.FunDefNotDec funDef) :: progTail) )(localEnv, globalEnv) =
     let
-      val (newLocalEnv, newGlobalEnv) = typeCheckDef(funDef)(localEnv, globalEnv)
+      val (newLocalEnv, newGlobalEnv) = typeCheckDef(funDef)(LocalTypeEnv.initial, globalEnv)
     in
       typeCheckP2(DataTypes.Prog progTail)(newLocalEnv, newGlobalEnv)
     end
@@ -412,12 +415,16 @@ struct
 
   and P(parseTree:DataTypes.Prog):int =
         let
+            val _ = print("Agora é o P1\n")
             val (env_1, sto_1) = P1(parseTree)(Env.initial, Store.empty)
-            val (env_2, sto_2) = P2(parseTree)(env_1, Store.empty)
-            val (env_f, sto_3) = P3(parseTree)(env_2, Store.empty)
+            val _ = print("Agora é o P2\n")
+            val (env_2, sto_2) = P2(parseTree)(env_1, sto_1)
+            val _ = print("Agora é o P3\n")
+            val (env_f, sto_3) = P3(parseTree)(env_2, sto_2)
+            val _ = print("Agora é o main\n")
             val main = Env.apply(env_f, DataTypes.Id "main")
-            val _ = Env.printFullEnv(env_f)
-            val _ = Store.printStore(sto_3)
+            val _ = Env.printEnv(env_f, !verbosity)
+            val _ = Store.printStore(sto_3, !verbosity)
             val _ = print("Vou executar o main!\n")
             val (sto_f,  originalMainReturn) = E(DataTypes.AppExp (DataTypes.Id "main", []))(env_f, sto_3)
             val _ = case originalMainReturn of ExpressibleValue.Int mainReturn => () | _ => print(Sort.expValSortAsString(originalMainReturn))
@@ -425,36 +432,71 @@ struct
         in
             (print("...Program finished with exit code " ^ Int.toString(mainReturn) ^ "\n");mainReturn)
         end
-        handle Bind => raise NonIntMainReturn
+        (*handle Bind => raise NonIntMainReturn*)
 
-  and P1(DataTypes.Prog [DataTypes.DecNotFunDef (DataTypes.Dec (typeSpec, DataTypes.Id id, _))])(env,sto):environment*store =
-            Dec(DataTypes.Dec (typeSpec, DataTypes.Id id, NONE))(env,sto)
-      | P1(DataTypes.Prog [DataTypes.FunDefNotDec funDef])(env, sto):environment*store =
-            let
-                val env_1 = Def(funDef)(env, sto)
-            in
-                (env_1,sto)
-            end
-      | P1(DataTypes.Prog (decOrFunDef::decOrFunDefList))(env,sto):environment*store =
-            P1(DataTypes.Prog decOrFunDefList)( P1(DataTypes.Prog [decOrFunDef])(env,sto) )
-
+  and P1(DataTypes.Prog ((DataTypes.DecNotFunDef (DataTypes.Dec (typeSpec, DataTypes.Id id, _))) :: progTail))(env,sto):environment*store =
+            P1(DataTypes.Prog progTail) (Dec(DataTypes.Dec (typeSpec, DataTypes.Id id, NONE)) (env,sto))
+      | P1(DataTypes.Prog ((DataTypes.FunDefNotDec funDef) :: progTail))(env, sto) = 
+            P1(DataTypes.Prog progTail) (env, sto)
       | P1(DataTypes.Prog []) (env,sto) = (env,sto)
 
-  and P2(prog:DataTypes.Prog)(env,sto):environment*store =
-            P1(prog)(env,sto)
+  (*and P2(prog:DataTypes.Prog)(env,sto):environment*store =
+            P1(prog)(env,sto)*)
+  and P2(DataTypes.Prog prog)(env, sto):environment*store =
+      let 
+            fun multipleExtends(env, []) = env
+            |   multipleExtends(env, (DataTypes.DecNotFunDef (DataTypes.Dec _)) :: progTail) = multipleExtends(env, progTail)
+            |   multipleExtends(env, (DataTypes.FunDefNotDec (DataTypes.FunDef (typeSpec, DataTypes.Id id, [], cmd))) :: progTail) = 
+                let
+                  fun e() = Env.extend(env, DataTypes.Id id, DenotableValue.Function f)
+                  and f([], sto_func) =
+                    let
+                      val (sto_1, retFlag, retVal) = c(sto_func) 
+                    in
+                      (sto_1, retVal)
+                    end
+                  |   f(_) = raise DefBug
+                  and c(sto_cmd) = C(cmd)(multipleExtends(e(), prog), sto_cmd)
+                in
+                  multipleExtends(e(), progTail)
+                end
 
-  and P3(DataTypes.Prog [DataTypes.DecNotFunDef (DataTypes.Dec
-    (typeSpec, DataTypes.Id id, expOption))])(env,sto):environment*store =
-            Dec(DataTypes.Dec (typeSpec, DataTypes.Id id, expOption))(env,sto)
-      | P3(DataTypes.Prog [DataTypes.FunDefNotDec funDef])(env, sto):environment*store =
-            let
-                val env_1 = Def(funDef)(env, sto)
-            in
-                (env_1,sto)
+            |   multipleExtends(env, (DataTypes.FunDefNotDec (DataTypes.FunDef (typeSpec, DataTypes.Id id, param_dec_list, cmd))) :: progTail) =
+                let
+                  fun e() = Env.extend(env, DataTypes.Id id, DenotableValue.Function f)
+                  and f(arr, sto_func) =
+                    let
+                      val env_1 = modifyEnv(e(), param_dec_list, arr)
+                      val (sto_1, retFlag, retVal) = c(sto_func, env_1)
+                    in
+                      (sto_1, retVal)
+                    end
+                  and c(sto_cmd, env) = C(cmd)(multipleExtends(env, prog), sto_cmd)
+                  and modifyEnv(env, param_dec_list, arr) =
+                    (case param_dec_list of
+                      [] => env
+                    | (DataTypes.Dec (typeSpec, DataTypes.Id id, NONE)) :: param_dec_list_tail =>
+                        let
+                          val env_2 = Env.extend(env, DataTypes.Id id, DenotableValue.Location (hd(arr)))
+                        in
+                          modifyEnv(env_2, param_dec_list_tail, tl(arr))
+                        end
+                    | _ => raise DefBug
+                    )
+                in
+                  multipleExtends(e(), progTail)
+                end
+      in
+        (multipleExtends(env, prog), sto)
+      end
+
+   and P3(DataTypes.Prog ((DataTypes.DecNotFunDef (DataTypes.Dec (typeSpec, DataTypes.Id id, SOME exp))) :: progTail))(env,sto):environment*store =
+            let val (sto_exp, expVal) = E(DataTypes.AssignExp (DataTypes.Id id, [], exp)) (env, sto)
+            in P3(DataTypes.Prog progTail) (env, sto_exp)
             end
-      | P3(DataTypes.Prog (decOrFunDef::decOrFunDefList))(env,sto):environment*store =
-            P3(DataTypes.Prog decOrFunDefList)(P3(DataTypes.Prog [decOrFunDef])(env,sto))
-      | P3(DataTypes.Prog []) (env,sto) = (env,sto)
+      | P3(DataTypes.Prog (_ :: progTail)) (env, sto) = P3(DataTypes.Prog progTail) (env, sto)
+      | P3(DataTypes.Prog []) (env, sto) = (env, sto)
+
   and Def(DataTypes.FunDef (typeSpec, DataTypes.Id id, [], cmd))(env, sto):environment =
     let
       fun e() = Env.extend(env, DataTypes.Id id, DenotableValue.Function f)
@@ -502,7 +544,7 @@ struct
             val (sto_f,loc) = Store.allocate(sto)
             val env_f = Env.extend(env,DataTypes.Id id, DenotableValue.Location loc)
           in
-            ( Env.printFullEnv(env_f) ; Store.printStore(sto_f) ; (env_f,sto_f) )
+            ( Env.printEnv(env_f, !verbosity) ; Store.printStore(sto_f, !verbosity) ; (env_f,sto_f) )
           end
 
   |   Dec(DataTypes.Dec (typeSpec, DataTypes.Id id, SOME exp))(env,sto):environment*store =
@@ -515,7 +557,7 @@ struct
             (*val ExpressibleValue.Int intExpVal = expVal
             val _ = print(Int.toString(intExpVal) ^ "\n")*)
           in
-            ( Env.printFullEnv(env_f) ; Store.printStore(sto_f) ; (env_f,sto_f) )
+            ( Env.printEnv(env_f, !verbosity) ; Store.printStore(sto_f, !verbosity) ; (env_f,sto_f) )
           end
 
   and E(DataTypes.LitExp lit)(env,sto):store*expressibleValue =
@@ -918,7 +960,7 @@ struct
       SOME exp =>
         let val (sto_f,expVal) = E(exp)(env,sto)
         in
-          (Store.printStore(sto_f); (sto_f,false,ExpressibleValue.VoidValue))
+          (Store.printStore(sto_f, !verbosity); (sto_f,false,ExpressibleValue.VoidValue))
         end
     | NONE => (sto,false,ExpressibleValue.VoidValue)
 
@@ -984,5 +1026,6 @@ struct
         in run(parseTree)
         end
         handle ParseError => ()
-
+    
+    
 end
