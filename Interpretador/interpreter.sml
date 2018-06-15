@@ -497,7 +497,7 @@ struct
       | P3(DataTypes.Prog (_ :: progTail)) (env, sto) = P3(DataTypes.Prog progTail) (env, sto)
       | P3(DataTypes.Prog []) (env, sto) = (env, sto)
 
-  and Def(DataTypes.FunDef (typeSpec, DataTypes.Id id, [], cmd))(env, sto):environment =
+  (*and Def(DataTypes.FunDef (typeSpec, DataTypes.Id id, [], cmd))(env, sto):environment =
     let
       fun e() = Env.extend(env, DataTypes.Id id, DenotableValue.Function f)
       and f([], sto_func) =
@@ -537,7 +537,7 @@ struct
             )
     in
         e()
-    end
+    end*)
 
   and Dec(DataTypes.Dec (typeSpec, DataTypes.Id id, NONE))(env,sto):environment*store =
           let
