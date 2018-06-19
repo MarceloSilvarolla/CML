@@ -13,9 +13,9 @@ val eolpos = ref 0;
 
 val badCh : string * string * int * int -> unit = fn
     (fileName, bad, line, col) =>
-    TextIO.output(TextIO.stdOut,fileName^"[aee"
-    ^Int.toString line^"."^Int.toString col
-    ^"] Invalid character \""^bad^"\"\n");
+    TextIO.output(TextIO.stdOut,"Bogus character from source file " ^  fileName^" at line "
+    ^Int.toString line^
+    ":" ^ bad ^ "\n");
 val eof = fn fileName => T.EOF(!lin,!col);
 
 structure KeyWord :
@@ -57,15 +57,14 @@ WS = [\ \t];
 EOL = ("\013\010" | "\010" | "\013");
 %%
 
-<INITIAL>{WS}* => (lin:=1;eolpos:=0;YYBEGIN CML; continue());
+<INITIAL>{WS}* => ((*print("INITIAL EXECUTADO\n");*) lin:=1;eolpos:=0;YYBEGIN CML; continue());
 <CML>{WS}* => (continue());
 <CML>{EOL} => ( lin:=(!lin)+1;eolpos:=yypos+size yytext; 
                         (*print( "EOL(yypos=" ^ Int.toString(yypos) ^ ", lin=" ^ Int.toString(!lin) ^ 
-                         ", eolpos=" ^ Int.toString(!eolpos) ^ ") " );*) continue());
-<COMMENT>{EOL} => ( lin:=(!lin)+1;eolpos:=yypos+size yytext; 
+                         ", eolpos=" ^ Int.toString(!eolpos) ^ ")\n" );*) continue());
+<COMMENT>{EOL} => ( (*print("COMMENT EXECUTADO\n");*) lin:=(!lin)+1;eolpos:=yypos+size yytext; 
                         (*print( "EOL(yypos=" ^ Int.toString(yypos) ^ ", lin=" ^ Int.toString(!lin) ^ 
                          ", eolpos=" ^ Int.toString(!eolpos) ^ ") " );*) continue());
-
 <CML>"/*" => ( YYBEGIN COMMENT; continue() );
 <CML>"//".* => ( continue() );
 <CML>{D}+ => (col:=yypos-(!eolpos); T.INT_LITERAL(yytext,!lin,!col));
@@ -84,14 +83,14 @@ EOL = ("\013\010" | "\010" | "\013");
 <CML>">" => (col:=yypos-(!eolpos); T.GT_OP(!lin,!col));
 <CML>">=" => (col:=yypos-(!eolpos); T.GE_OP(!lin,!col));
 <CML>"{" => (col:=yypos-(!eolpos); T.LCURLY_BRACKET(!lin,!col));
-<CML>"}" => (col:=yypos-(!eolpos); T.RCURLY_BRACKET(!lin,!col));
+<CML>"}" => (col:=yypos-(!eolpos); (*print("}(" ^ Int.toString(!lin) ^ ", " ^ Int.toString(!col) ^  ", " ^ Int.toString(yypos) ^ ")\n"   );*)T.RCURLY_BRACKET(!lin,!col));
 <CML>"[" => (col:=yypos-(!eolpos); T.LSQUARE_BRACKET(!lin,!col));
 <CML>"]" => (col:=yypos-(!eolpos); T.RSQUARE_BRACKET(!lin,!col));
 <CML>"(" => (col:=yypos-(!eolpos); T.LPAREN(!lin,!col));
 <CML>")" => (col:=yypos-(!eolpos); T.RPAREN(!lin,!col));
 <CML>";" => (col:=yypos-(!eolpos); T.SEMICOLON(!lin,!col));
 <CML>"," => (col:=yypos-(!eolpos); T.COMMA(!lin,!col));
-<CML>"=" => (col:=yypos-(!eolpos); (*print("=(" ^ Int.toString(!lin) ^ ", " ^ Int.toString(!col) ^  ", " ^ Int.toString(yypos) ^ ") "   );*) T.EQUALS(!lin,!col));
+<CML>"=" => (col:=yypos-(!eolpos); (*print("=(" ^ Int.toString(!lin) ^ ", " ^ Int.toString(!col) ^  ", " ^ Int.toString(yypos) ^ ")\n"   );*) T.EQUALS(!lin,!col));
 <CML>"+" => (col:=yypos-(!eolpos); T.PLUS(!lin,!col));
 <CML>"-" => (col:=yypos-(!eolpos); T.MINUS(!lin,!col));
 <CML>"*" => (col:=yypos-(!eolpos); T.TIMES(!lin,!col));
@@ -99,7 +98,9 @@ EOL = ("\013\010" | "\010" | "\013");
 <CML>{L}{A}* => (case find yytext of 
                   SOME v => (col:=yypos-(!eolpos);
                                                v(!lin,!col))
-                 | _ => (col:=yypos-(!eolpos);
+                 | _ => (
+                         col:=yypos-(!eolpos);
+           (*print("IDENTIFIER(" ^ yytext ^ ", " ^ Int.toString(!lin) ^ ", " ^ Int.toString(!col) ^  ", " ^ Int.toString(yypos) ^ ")\n"   );*)
                          T.IDENTIFIER(yytext, !lin,!col)));
 <CML> . => (col:=yypos-(!eolpos); badCh(fileName,yytext,!lin,!col); T.BOGUS_SYMBOL(!lin,!col));
 

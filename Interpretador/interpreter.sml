@@ -45,8 +45,7 @@ struct
              else TextIO.inputN (inStream,n);
     val printError : string * int * int -> unit = fn
         (msg,line,col) =>
-         (print("Parse error!\n" ^ fileName ^ "["^Int.toString line^":"
-               ^Int.toString col^"] "^msg^"\n"); raise ParseError)
+         (print("Source file " ^ fileName ^ " contains error at line " ^ Int.toString line ^ ": " ^ msg^"\n"); raise ParseError)
     (*val _ = Compiler.Control.Print.printDepth:=50;*)
     val (tree, rem) = CMLParser.parse
           (15,
@@ -415,17 +414,17 @@ struct
 
   and P(parseTree:DataTypes.Prog):int =
         let
-            val _ = print("Agora é o P1\n")
+            val _ = if !verbosity > 0 then print("Agora é o P1\n") else ()
             val (env_1, sto_1) = P1(parseTree)(Env.initial, Store.empty)
-            val _ = print("Agora é o P2\n")
+            val _ = if !verbosity > 0 then print("Agora é o P2\n") else ()
             val (env_2, sto_2) = P2(parseTree)(env_1, sto_1)
-            val _ = print("Agora é o P3\n")
+            val _ = if !verbosity > 0 then print("Agora é o P3\n") else ()
             val (env_f, sto_3) = P3(parseTree)(env_2, sto_2)
-            val _ = print("Agora é o main\n")
+            val _ = if !verbosity > 0 then print("Agora é o main\n") else ()
             val main = Env.apply(env_f, DataTypes.Id "main")
             val _ = Env.printEnv(env_f, !verbosity)
             val _ = Store.printStore(sto_3, !verbosity)
-            val _ = print("Vou executar o main!\n")
+            val _ = if !verbosity > 0 then print("Vou executar o main!\n") else ()
             val (sto_f,  originalMainReturn) = E(DataTypes.AppExp (DataTypes.Id "main", []))(env_f, sto_3)
             val _ = case originalMainReturn of ExpressibleValue.Int mainReturn => () | _ => print(Sort.expValSortAsString(originalMainReturn))
             val ExpressibleValue.Int mainReturn = originalMainReturn
