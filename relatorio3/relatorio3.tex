@@ -67,6 +67,126 @@
 
 \section{Manual de Uso}
 
+\section{Exemplos}
+
+Nesta sessão apresentaremos um conjunto de exemplos de uso da linguagem, com o objetivo de demonstrar o funcionamento das funcionalidades gerais da linguagem e dos algoritmos de Machine Learning.
+
+\subsection{Classificação usando Perceptron}
+
+O arquivo \texttt{Interpretador/classification1.cml} contém um exemplo do treinamento de um classificador do tipo Perceptron. O exemplo utiliza o conjunto de dados da planilha \texttt{demonstracao/classification1.csv}, composto por 180 linhas, cada uma com os atributos \texttt{x1}, \texttt{x2}, e \texttt{y}. Os dois primeiros atributos assumem valores reais e correspondem a posição de cada exemplo no plano, enquanto o terceiro pode assumir 1.0 ou -1.0.
+
+O objetivo será treinar um Perceptron capaz de classificar os pontos dentre positivos ou negativos, com base nos valores dos atributos \texttt{x1} e \texttt{x2}.
+
+O exemplo treina o classificador na linha:
+
+\begin{verbatim}
+model P = perceptron(X, y, 1000);
+\end{verbatim}
+
+Nesta função, \texttt{X} e \texttt{y} correspondem aos \textit{datasets} contendo as entradas e as saídas, respectivamente, enquanto o terceiro parâmetro corresponde a quantidade de iterações de treinamento a serem executadas.
+
+Para executar o arquivo, de dentro do diretório \texttt{Interpretador}, execute
+
+\begin{verbatim}
+./cml classification1.cml
+\end{verbatim}
+
+Este código treina o Perceptron e salva o modelo treinado no arquivo \texttt{Interpretador/P.model}. Em seguida ele usa o modelo treinado para predizer a categoria dos dados, e salva estas predições como uma nova planilha \texttt{demonstracao/classification1\_output.csv}.
+
+Como CML não possui funcionalidades para visualização dos dados, incluímos um conjunto de scripts em Python no diretório \texttt{demonstracao}, capazes de plotar os dados das planilhas originais e as predições. Para visualizar a predição do Perceptron, dentro de \texttt{demonstracao} execute:
+
+\begin{verbatim}
+python visualize_classification1.py classification1_output.csv
+\end{verbatim}
+
+Este script gera dois plots. O primeiro deles corresponde os dados originais, sem categorias, enquanto o segundo corresponde aos mesmos dados, porém coloridos de acordo com a categoria (positivo ou negativo) predita pelo classificador.
+
+\subsection{Classificação usando Pocket-Perceptron}
+
+O arquivo \texttt{Interpretador/classification2.cml} contém um exemplo de treinamento de um classificador do tipo Pocket-Perceptron. Este é um modelo de aprendizado similar ao Perceptron, porém capaz de lidar com dados não linearmente separáveis. Ele é menos eficiente para ser treinado, mas a velocidade de predição é a mesma do Perceptron.
+
+O exemplo utiliza um conjunto de dados armazenado na planilha \texttt{demonstracao/classification2.csv}. Este conjunto de dados é composto por 1800 exemplos, cada um deles com três atributos: \texttt{x1}, \texttt{x2}, que novamente representam a posição de um ponto no plano, e \texttt{color}, que representa a cor associada com o exemplo, que pode assumir as categorias \texttt{blue} ou \texttt{green}. O objetivo, novamente, é treinar um classificar capaz de classificar os pontos dentre azuis e verdes, com base nas coordenadas do ponto no plano. 
+
+Para executar este código, dentro da pasta \texttt{Interpretador}, execute:
+
+\begin{verbatim}
+./cml classification2.cml
+\end{verbatim}
+
+Este código treina o Pocket-Perceptron nos dados, e salva os dados do modelo no arquivo \texttt{Interpretador/PP.model}. Em seguida, ele usa o modelo treinado para realizar a predição das cores dos exemplos do conjunto de treinamento, e salva estas predições na planilha \texttt{demonstracao/classification2\_output.csv}.
+
+Para visualizar estas predições, dentro do diretório \texttt{demonstracao}, execute:
+
+\begin{verbatim}
+python visualize_classification2.py classification2_output.csv
+\end{verbatim}
+
+Este script irá gerar dois plots, o primeiro deles corresponde aos dados de entrada, com as cores corretas. Note que, diferente dos dados do exemplo anterior, este conjunto de dados não é linearmente separável, ou seja, não é possível traçar um hiper-plano (reta, no caso de duas dimensões) que separe as duas categorias. O Pocket-Perceptron é uma variação do Perceptron normal capaz de lidar com este tipo de situação. Ele treina por uma quantidade limitada de iterações, e reporta a melhor separação linear que ele foi capaz de encontrar. O segundo plot corresponde aos dados de entrada com as cores atribuídas pelo classificador. É possível perceber que ele separa as duas categorias com uma reta da melhor forma possível, dada a quantidade de iterações executadas.
+
+\subsection{Classificação usando Regressão Logística}
+
+O arquivo \texttt{Interpretador/logistic\_regression.cml} contém um exemplo de treinamento de um classificador para Regressão Logística. Diferente do Perceptron, que produz uma categoria como saída, este tipo de modelo é utilizado para predizer probabilidades sobre categorias.
+
+O exemplo utiliza os mesmos dados que o Pocket-Perceptron. Porém, o objetivo agora será estimar a probabilidade de cada ponto assumir a cor verde, com base nas suas coordenadas no plano.
+
+O treinamento é realizado na linha:
+
+\begin{verbatim}
+model logR = logistic_regression(X, y, "green", 0.01, 10, 100);
+\end{verbatim}
+
+Nesta função, \texttt{X} e \texttt{y} correspondem aos datasets contendo as entradas e saídas de treinamento, respectivamente. \texttt{"green"} é a categoria da saída da qual gostaríamos de estimar a probabilidade. 0.01 é a taxa de aprendizado, que corresponde à velocidade em que os parâmetros do modelo são atualizados ao longo das iterações, quanto maior, mais rápido, porém mais instável é o treinamento. 10 é o tamanho do \textit{batch} de treinamento, ou seja, a quantidade de exemplos analisados a cada iteração. E 100 é a quantidade de iterações do treinamento.
+
+A cada iteração, o algoritmo de treinamento busca ajustar os parâmetros do modelo de forma a minimizar a Entropia Cruzada Média, uma medida de erro bem comum em tarefas de aprendizado de máquina em que a saída represente uma probabilidade. O valor desta medida de erro é mostrado na tela a cada iteração.
+
+Para executar o código deste exemplo, dentro do diretório \texttt{Interpretador}, execute:
+
+\begin{verbatim}
+./cml logistic_regression.cml
+\end{verbatim}
+
+Este código treina um classificador para Regressão Logística e salva os parâmetros deste classificador no arquivo \texttt{Interpretador/logR.model}. Em seguida utiliza o modelo treinado para estimar a probabilidade de cada ponto do conjunto de treinamento ser verde, e salva estas probabilidades na planilha \texttt{demonstracao/logistic\_output.csv}.
+
+Para visualizar estas predições, dentro do diretório \texttt{demonstracao}, execute:
+
+\begin{verbatim}
+python visualize_logistic_regression.py logistic_output.csv
+\end{verbatim}
+
+Este script irá gerar dois plots. O primeiro deles corresponde aos dados originais com as respectivas cores, enquanto o segundo corresponde a um mapa de calor destes mesmos dados, onde o intervalo de cores corresponde ao intervalo $[0,1]$ atribuído pelo classificador. Observe que próximo aos pontos médios de cada cor, a probabilidade é bem intensa (bem alta ou bem baixa), pois o classificador tem um alto nível de certeza sobre a cor dos pontos nestas regiões, enquanto que no meio do caminho entre estes pontos médios, as probabilidades assumem valores intermediários, pois o classificador não tem muita certeza sobre a cor de pontos nesta região, atribuindo probabilidades próximas de 0.5.
+
+\subsection{Regressão Linear}
+
+O arquivo \texttt{Interpretador/linear\_regression.cml} contém um exemplo de treinamento de um modelo de Regressão Linear. Diferente dos modelos classificadores dos exemplos anteriores, que são treinados para produzirem categorias ou probabilidades sobre categorias como saída, um modelo de regressão linear pode produzir qualquer valor real.
+
+O exemplo utiliza o conjunto de dados armazenado na planilha \\ \texttt{demonstracao/linear\_regression.csv}. Cada exemplo deste conjunto de dados representa um imóvel, através de seu tamanho em $m^2$, e seu preço. O objetivo será treinar um modelo capaz de estimar o valor de um imóvel com base no seu tamanho.
+
+O treinamento é realizado na linha:
+
+\begin{verbatim}
+model linR = linear_regression(X, y, 0.01, 10, 1000);
+\end{verbatim}
+
+Nesta função, os parâmetros tem o mesmo significado da regressão logística, com a exceção de que agora, não é necessário informar a categoria, pois a saída será um valor contínuo.
+
+A cada iteração, o algoritmo de treinamento busca ajustar os parâmetros do modelo de forma a minimizar o Erro Quadrado Médio, uma medida de erro bem comum em tarefas de aprendizado de máquina em que a saída seja um valor contínuo. O valor desta medida de erro é mostrado na tela a cada iteração.
+
+Para executar o código deste exemplo, dentro do diretório \texttt{Interpretador}, execute:
+
+\begin{verbatim}
+./cml linear_regression.cml
+\end{verbatim}
+
+Este código treina um modelo de regressão linear e salva os parâmetros deste modelo no arquivo \texttt{Interpretador/linR.model}. Em seguida utiliza este modelo treinado para predizer o valor de cada imóvel, e salva estes valores na planilha \texttt{demonstracao/linear\_output.csv}.
+
+Para visualizar estas predições, dentro do diretório \texttt{demonstracao}, execute:
+
+\begin{verbatim}
+python visualize_linear_regression.py linear_output.csv
+\end{verbatim}
+
+O primeiro plot mostra aos dados originais, onde o eixo horizontal corresponde ao tamanho, e o eixo vertical corresponde ao valor do imóvel. O segundo plot mostra a mesma informação do primeiro, juntamente com a reta que passa pelos pontos correspondentes aos preços estimados pelo modelo para cada valor de $m^2$ presente no conjunto.
+
 \section{Facilidades e Dificuldades Encontradas}
 
 \section{Conclusão}
