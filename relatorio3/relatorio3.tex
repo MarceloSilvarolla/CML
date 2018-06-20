@@ -187,6 +187,28 @@ python visualize_linear_regression.py linear_output.csv
 
 O primeiro plot mostra aos dados originais, onde o eixo horizontal corresponde ao tamanho, e o eixo vertical corresponde ao valor do imóvel. O segundo plot mostra a mesma informação do primeiro, juntamente com a reta que passa pelos pontos correspondentes aos preços estimados pelo modelo para cada valor de $m^2$ presente no conjunto.
 
+\subsection{Um Exemplo mais Realista}
+
+De forma a ilustrar várias funcionalidades da linguagem, preparamos um exemplo mais complexo de treinamento e uso de um modelo de aprendizado. Para este exemplo, utilizamos o conjunto de dados \textit{TMDB 5000 Movie Dataset}\footnote{Disponível na plataforma de competições de \textit{data science} Kaggle, em \url{www.kaggle.com/tmdb/tmdb-movie-metadata}}. Este conjunto de dados corresponde a entradas da base de dados do site TMDb\footnote{\url{www.themoviedb.org}}, uma plataforma que mantém dados sobre filmes, e permite que usuários votem na qualidade destes filmes. 
+
+Este conjunto de dados contém 4803 exemplos, cada um deles com vários atributos, como elenco, gênero, orçamento, etc. Para este exemplo, removemos alguns destes atributos dos dados, que tornavam a tarefa muito mais complexa, mantendo apenas os atributos: orçamento, idioma original, lucro, duração, média dos votos do público, e quantidade de votos recebidos. O conjunto de dados modificado está na planilha \texttt{demonstracao/tmdb\_simple.csv}. 
+
+Os votos do público assumem valores no intervalo de 0 a 10, e o objetivo deste exemplo será treinar um modelo de regressão capaz de estimar a média dos votos com base nos outros atributos. Como este é um exemplo mais elaborado, iremos seguir boas práticas para projetos de Aprendizado de Máquina e separar este conjunto de dados em um conjunto de treinamento, que será utilizado para o treinamento do modelo de regressão, da mesma forma que os exemplos anteriores, e um conjunto de testes, que será utilizado para avaliar a capacidade de generalizar a predição para dados inéditos. O código para este exemplo se encontra no arquivo \texttt{Interpretador/tmdb.cml}.
+
+Este código explora diversas funcionalidades da linguagem CML.  Primeiramente, ele utiliza uma função para separar os dados em treinamento e teste, e esta função faz uso das funções predefinidas para manipulação de datasets \texttt{rows} e \texttt{num\_rows}. Basicamente, esta função está selecionado os \texttt{test\_size} primeiros elementos do dataset para compor o conjunto de testes, e selecionando os \texttt{train\_size} elementos seguintes para compor o conjunto de treinamento. Esta função retorna um array de datasets, contendo os conjuntos de treinamento e testes nas duas primeiras posições.
+
+Em seguida este código salva os conjuntos de treinamento e testes em duas planilhas separadas, \texttt{demonstracao/tmdb\_train.csv}, e \texttt{demonstracao/tmdb\_test.csv}, para então treinar um modelo de regressão linear por 500 iterações sobre o conjunto de treinamento. Este treinamento pode demorar dependendo da máquina em que o código estiver sendo executado. Ao final do treinamento, este código salva as informações do modelo treinado no arquivo \texttt{Interpretador/tmdb\_linreg.model}. Para evitar a execução de todo o processo de treinamento, já incluímos no projeto os arquivos gerados pela execução deste código.
+
+O arquivo \texttt{Interpretador/tmdb\_test.cml} usa este modelo treinado para predizer a média dos votos para os exemplos do conjunto de testes, que não foram utilizados para o treinamento do modelo. Em seguida este arquivo salva as predições no arquivo \texttt{demonstracao/tmdb\_predictions.csv} e as médias corretas em \texttt{demonstracao/tmdb\_correct.csv}.
+
+Incluímos um script que permite avaliar a qualidade da predição realizada. Dentro do diretório \texttt{demonstracao}, execute:
+
+\begin{verbatim}
+python tmdb_mean_absolute_error.py tmdb_correct.csv tmdb_predictions.csv
+\end{verbatim}
+
+Este script irá calcular o erro absoluto médio entre as predições e os médias de votos corretas para cada filme do conjunto de testes. Na nossa execução, este valor ficou em aproximadamente 0.8 (os votos são de 0 a 10). Lembre que estes dados não foram utilizados no processo de treinamento, indicando que o modelo adquiriu capacidade para generalizar o aprendizado para dados inéditos.
+
 \section{Facilidades e Dificuldades Encontradas}
 
 \section{Conclusão}
