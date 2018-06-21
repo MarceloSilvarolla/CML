@@ -63,9 +63,57 @@
 \newpage
 \section{Estrutura Geral do Projeto}
 
+Nesta sessão explicaremos como feita a estruturação do projeto. Toda a lógica de funcionamento da linguagem está dentro do diretório \texttt{Interpretador}.
+
+O arquivo \texttt{Interpretador/interpreter.sml} é onde ocorrem o as tarefas principais da interpretação. Este arquivo contém a função \texttt{interpret}, que é responsável por obter a árvore sintática do código fornecido, realizar a verificação de tipos, e se não houver nenhum erro nestas etapas, interpretar o código.
+
+O arquivo \texttt{Aux/auxiliary.sml}, contém as seguintes estruturas:
+
+\begin{itemize}
+\item \texttt{Location}: Define o tipo \texttt{location}, que representa posições da \textit{store}, onde os dados ficam armazenados.
+
+\item \texttt{ArrayValue}: Define o tipo \texttt{arrayValue}, que representa os arrays na linguagem. Arrays em CML são implementados como listas de \textit{locations}, onde cada location aramazena o valor de um elemento do array (que pode ser outro array, no caso de arrays de mais de uma dimensão).
+
+\item \texttt{ExpressibleValue}: Representa o conjunto de tipos que são aceitos como resultado de uma expressão. Define o tipo composto \texttt{expressibleValue}, que pode ser dos tipos: \texttt{Int}, \texttt{Real}, \texttt{Bool}, \texttt{Char}, \texttt{String}, \texttt{Dataset}, \texttt{Model}, \texttt{ArrayValue}, ou \texttt{VoidValue}. Este último representa o tipo do retorno de funções \texttt{void}, não sendo usado para atribuições de variáveis.
+
+\item \texttt{StorableValue}: Define o tipo composto\texttt{storableValue}, que representa os tipos que podem ser armazenados na \textit{store}, e pode assumir os mesmos tipos presentos no \texttt{expressibleValue}, com exceção de \texttt{VoidValue}, além dos tipos \texttt{Unused}, que representa uma localização que não foi associada a nenhuma variável, e \texttt{Undefined}, que representa uma localização que foi atribuída a uma variável que ainda não recebeu nenhuma atribuição.
+
+\item \texttt{Store}: Contém os dados que estão sendo armazendas durante a execução de um programa em CML. É responsável por fornecer funções de alocação e desalocação de localizações, além de atualização e acesso a valores armazenados na \textit{store}.
+
+\item \texttt{Function}: Define o tipo \texttt{function}, responsável por representar uma função em CML. Funções em CML são representadas em SML através de uma outra função, que recebe uma lista de localizações e uma instância da \textit{store}, onde estas localizações armazenam os valores que a função deve receber como parâmetro, e devolve um \texttt{ExpressibleValue}.
+\end{itemize}
+
 \section{Funcionamento}
 
 \section{Manual de Uso}
+
+Criamos um script que facilita o uso do interpretador CML. Dentro do diretório \texttt{Interpretador}, execute o seguinte comando, substituindo onde indicado pelo caminho do fonte CML a ser interpretado:
+
+\begin{verbatim}
+./cml <CAMINHO PARA O FONTE>
+\end{verbatim}
+
+Este script apaga os arquivos temporários gerados por execuções anteriores do interpretador, recompila o interpretador, e invoca a interpretação do arquivo fornecido.
+
+É possível também compilar e invocar o interpretador manualmente. Dentro do diretório \texttt{Interpretador}, utilize o comando \texttt{sml} para abrir um console SML, e execute os seguinte comando neste console:
+
+\begin{verbatim}
+CM.make "CML.cm";
+\end{verbatim}
+
+Isto irá compilar os módulos necessários do interpretador. Ainda dentro do console SML, execute:
+
+\begin{verbatim}
+CML.interpret "<CAMINHO PARA O FONTE>"
+\end{verbatim}
+
+Isto irá invocar a função de interpretação de CML, com o arquivo informado como entrada. Esta função monta a árvore sintática, realiza a verificação de tipos, e interpreta o código.
+
+É possível visualizar a árvore sintática do código invocando a seguinte função:
+
+\begin{verbatim}
+CML.parse "<CAMINHO PARA O FONTE>"
+\end{verbatim}
 
 \section{Exemplos}
 
