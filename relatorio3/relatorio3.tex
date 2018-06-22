@@ -65,9 +65,9 @@
 
 Nesta sessão explicaremos como feita a estruturação do projeto. Toda a lógica de funcionamento da linguagem está dentro do diretório \texttt{Interpretador}.
 
-O arquivo \texttt{Interpretador/interpreter.sml} é onde ocorrem o as tarefas principais da interpretação. Este arquivo contém a função \texttt{interpret}, que é responsável por obter a árvore sintática do código fornecido, realizar a verificação de tipos, e se não houver nenhum erro nestas etapas, interpretar o código.
+O arquivo \texttt{Interpretador/interpreter.sml} é são realizadas as tarefas principais da interpretação. Este arquivo contém a função \texttt{interpret}, que é responsável por obter a árvore sintática do código fornecido, realizar a verificação de tipos, e se não ocorrer nenhum erro nestas etapas, interpretar o código.
 
-O arquivo \texttt{Aux/auxiliary.sml}, contém as seguintes estruturas:
+O arquivo \texttt{Interpreter/Aux/auxiliary.sml}, contém as seguintes estruturas:
 
 \begin{itemize}
 \item \texttt{Location}: Define o tipo \texttt{location}, que representa posições da \textit{store}, onde os dados ficam armazenados.
@@ -81,6 +81,17 @@ O arquivo \texttt{Aux/auxiliary.sml}, contém as seguintes estruturas:
 \item \texttt{Store}: Contém os dados que estão sendo armazendas durante a execução de um programa em CML. É responsável por fornecer funções de alocação e desalocação de localizações, além de atualização e acesso a valores armazenados na \textit{store}.
 
 \item \texttt{Function}: Define o tipo \texttt{function}, responsável por representar uma função em CML. Funções em CML são representadas em SML através de uma outra função, que recebe uma lista de localizações e uma instância da \textit{store}, onde estas localizações armazenam os valores que a função deve receber como parâmetro, e devolve um \texttt{ExpressibleValue}.
+
+\item \texttt{DenotableValue}: Define o tipo \texttt{denotableValue}, responsável por representar aquilo que pode ser associado com um identificador da linguagem. Pode ser do tipo \texttt{Location}, que significa uma posição da \textit{store} onde algum  \textit{ExpressibleValue} está armazenado, \texttt{Function}, que representa uma função em CML, ou \texttt{Unbound}, que é associado a qualquer identificador que não tenha sido declarado como uma variável ou definido com uma função na linguagem.
+
+\item \texttt{ReturnFlag}: Define o tipo \texttt{returnFlag}, que simplesmente assume um valor booleano, responsável por representar a ocorrência de um comando \texttt{return}.
+
+\item \texttt{LearningAuxBridge}: Responsável por traduzir as chamadas de funções predefinidas para chamadas das funções da biblioteca de Aprendizado de Máquina. Assim como as funções que são definidas em CML, as funções predefinidas também recebem uma lista de localizações e um \textit{store} contendo os valores dos parâmetros. Esta estrutura é responsável por obter os valores destes parâmetros da \textit{store} e invocar as respectivas funções na Aprendizado de Máquina.
+
+\item \texttt{Print}: Responsável por definir as funções de escrita em CML, \texttt{print} e \texttt{println}.
+ 
+\item \texttt{Env}: Responsável por definir o \textit{environment}, que pode ser interpretado como uma função que mapeia cada identificadores da linguagem para um \texttt{DenotableValue}. Nomes de variáveis são mapeados para \texttt{Locations}, nomes de funções são mapeados para \texttt{Functions}, e identificadores não declarados são mapeados para \texttt{Unbound}. Fornece funções para associar identificadores com \texttt{DenotableValues} e acessar \texttt{DenotableValues} associados com identificadores.
+  
 \end{itemize}
 
 \section{Funcionamento}
