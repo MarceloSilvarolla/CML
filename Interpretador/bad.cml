@@ -1,26 +1,11 @@
 int main() {
-   int x = 7;
-   int y = 8;
-   x = 5;
-   banana; x = 5;
-  
-  
-  
-  
-  
-  
-  
-  
-  
+    
   
    
-   
-   
-  
-  
-  
-  
-  
-   banana = 5;
-   x = 
+   int i = 0;
+   while(i < ) {
+      println(i);
+      i = i + 1;
+   }
+   return 0;
 }

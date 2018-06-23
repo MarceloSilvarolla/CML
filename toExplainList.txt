@@ -1,4 +1,4 @@
-Bug
+Ex-Bug
 1) Problema das passadas (recursão mútua)
 
 Dificuldades
@@ -14,11 +14,9 @@ Facilidades:
 3) CLex e CYacc
 4) Git
 
-
 Curiosidades:
 1) Polimorfismo de
 void print(any x)
 2) CML > Python por ter checagem de tipos
    CML > C++ por ser feita para Machine Learning
-
 

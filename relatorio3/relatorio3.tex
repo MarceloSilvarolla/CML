@@ -68,6 +68,28 @@
 \section{Manual de Uso}
 
 \section{Facilidades e Dificuldades Encontradas}
+Cometemos um erro sutil na semântica denotacional, que impedia o funcionamento de funções mutuamente recursivas. Utilizamos a ideia das múltiplas passadas, $P1, P2, P3$, que iam redefinindo as funções para que enxergassem as demais. Por exemplo, considere o programa abaixo:
+
+\begin{verbatim}
+int main() {
+  g(8); // 1337
+  return 0;
+}
+
+int f(int x) {
+  if(x == 0) { return 42; }
+  return g(x - 1);
+}
+
+int g(int x) {
+  if(x == 0) { return 1337; }
+  return f(x - 1);
+}
+
+\end{verbatim}
+
+Na primeira passada, \texttt{g} conhece \texttt{f}, que não conhece \texttt{g}.
+Na segunda passada, \texttt{g} conhece a \texttt{f} da segunda passada, que, por sua vez, conhece a \texttt{g} da primeira passada. Portanto, ao fazermos a chamada a \texttt{g} no \texttt{main}, depois de um certo número de chamadas recursivas, chegamos numa chamada de \texttt{g} dentro da \texttt{f} da primeira passada, que não a conhece.
 
 \section{Conclusão}
 

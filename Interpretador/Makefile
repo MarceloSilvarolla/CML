@@ -1,3 +1,2 @@
 clean:
-	rm -r .cm/ ./*/.cm ./*/*/.cm
-
+	git clean -x -f -d -i
