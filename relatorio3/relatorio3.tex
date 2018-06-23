@@ -136,8 +136,13 @@ CML.parse "<CAMINHO PARA O FONTE>"
 
 Nesta sessão apresentaremos um conjunto de exemplos de uso da linguagem, com o objetivo de demonstrar o funcionamento das funcionalidades gerais da linguagem e dos algoritmos de Machine Learning.
 
-\subsection{Classificação usando Perceptron}
+\subsection{Exemplos de Uso da Linguagem}
 
+De modo a demonstrar as funcionalidades básicas da linguagem, preparamos um conjunto de exemplos corretos e incorretos. Os exemplos corretos permitem observar o uso correto da linguagem, e foram planejados de forma a executar sem erros. Os exemplos incorretos permitem observar a capacidade do interpretador em identificar erros de sintaxe nos códigos. O interpretador deve ser capaz de informar o erro no momento da execução destes exemplos.
+
+Estes exemplos estão no diretório \texttt{Interpretador}, sendo que os exemplos corretos e incorretos estão em arquivos identificados com os prefixos \texttt{good} e \texttt{bad} (por exemplo, \texttt{Interpretador/good2.cml} ou \texttt{Interpretador/bad1.cml}).
+
+\subsection{Classificação usando Perceptron}
 O arquivo \texttt{Interpretador/classification1.cml} contém um exemplo do treinamento de um classificador do tipo Perceptron. O exemplo utiliza o conjunto de dados da planilha \texttt{demonstracao/classification1.csv}, composto por 180 linhas, cada uma com os atributos \texttt{x1}, \texttt{x2}, e \texttt{y}. Os dois primeiros atributos assumem valores reais e correspondem a posição de cada exemplo no plano, enquanto o terceiro pode assumir 1.0 ou -1.0.
 
 O objetivo será treinar um Perceptron capaz de classificar os pontos dentre positivos ou negativos, com base nos valores dos atributos \texttt{x1} e \texttt{x2}.
