@@ -63,9 +63,221 @@
 \newpage
 \section{Estrutura Geral do Projeto}
 
+Nesta sessão explicaremos como feita a estruturação do projeto. Toda a lógica de funcionamento da linguagem está dentro do diretório \texttt{Interpretador}.
+
+O arquivo \texttt{Interpretador/interpreter.sml} é são realizadas as tarefas principais da interpretação. Este arquivo contém a função \texttt{interpret}, que é responsável por obter a árvore sintática do código fornecido, realizar a verificação de tipos, e se não ocorrer nenhum erro nestas etapas, interpretar o código.
+
+O arquivo \texttt{Interpretador/Aux/auxiliary.sml}, contém as seguintes estruturas:
+
+\begin{itemize}
+\item \texttt{Location}: Define o tipo \texttt{location}, que representa posições da \textit{store}, onde os dados ficam armazenados.
+
+\item \texttt{ArrayValue}: Define o tipo \texttt{arrayValue}, que representa os arrays na linguagem. Arrays em CML são implementados como listas de \textit{locations}, onde cada location aramazena o valor de um elemento do array (que pode ser outro array, no caso de arrays de mais de uma dimensão).
+
+\item \texttt{ExpressibleValue}: Representa o conjunto de tipos que são aceitos como resultado de uma expressão. Define o tipo composto \texttt{expressibleValue}, que pode ser dos tipos: \texttt{Int}, \texttt{Real}, \texttt{Bool}, \texttt{Char}, \texttt{String}, \texttt{Dataset}, \texttt{Model}, \texttt{ArrayValue}, ou \texttt{VoidValue}. Este último representa o tipo do retorno de funções \texttt{void}, não sendo usado para atribuições de variáveis.
+
+\item \texttt{StorableValue}: Define o tipo composto\texttt{storableValue}, que representa os tipos que podem ser armazenados na \textit{store}, e pode assumir os mesmos tipos presentos no \texttt{expressibleValue}, com exceção de \texttt{VoidValue}, além dos tipos \texttt{Unused}, que representa uma localização que não foi associada a nenhuma variável, e \texttt{Undefined}, que representa uma localização que foi atribuída a uma variável que ainda não recebeu nenhuma atribuição.
+
+\item \texttt{Store}: Contém os dados que estão sendo armazendas durante a execução de um programa em CML. É responsável por fornecer funções de alocação e desalocação de localizações, além de atualização e acesso a valores armazenados na \textit{store}.
+
+\item \texttt{Function}: Define o tipo \texttt{function}, responsável por representar uma função em CML. Funções em CML são representadas em SML através de uma outra função, que recebe uma lista de localizações e uma instância da \textit{store}, onde estas localizações armazenam os valores que a função deve receber como parâmetro, e devolve um \texttt{ExpressibleValue}.
+
+\item \texttt{DenotableValue}: Define o tipo \texttt{denotableValue}, responsável por representar aquilo que pode ser associado com um identificador da linguagem. Pode ser do tipo \texttt{Location}, que significa uma posição da \textit{store} onde algum  \textit{ExpressibleValue} está armazenado, \texttt{Function}, que representa uma função em CML, ou \texttt{Unbound}, que é associado a qualquer identificador que não tenha sido declarado como uma variável ou definido com uma função na linguagem.
+
+\item \texttt{ReturnFlag}: Define o tipo \texttt{returnFlag}, que simplesmente assume um valor booleano, responsável por representar a ocorrência de um comando \texttt{return}.
+
+\item \texttt{LearningAuxBridge}: Responsável por traduzir as chamadas de funções predefinidas para chamadas das funções da biblioteca de Aprendizado de Máquina. Assim como as funções que são definidas em CML, as funções predefinidas também recebem uma lista de localizações e um \textit{store} contendo os valores dos parâmetros. Esta estrutura é responsável por obter os valores destes parâmetros da \textit{store} e invocar as respectivas funções na Aprendizado de Máquina.
+
+\item \texttt{Print}: Responsável por definir as funções de escrita em CML, \texttt{print} e \texttt{println}.
+ 
+\item \texttt{Env}: Responsável por definir o \textit{environment}, que pode ser interpretado como uma função que mapeia cada identificadores da linguagem para um \texttt{DenotableValue}. Nomes de variáveis são mapeados para \texttt{Locations}, nomes de funções são mapeados para \texttt{Functions}, e identificadores não declarados são mapeados para \texttt{Unbound}. Fornece funções para associar identificadores com \texttt{DenotableValues} e acessar \texttt{DenotableValues} associados com identificadores.
+\end{itemize}
+
+O diretório \texttt{Interpretador/LearningLib} contém a biblioteca de Aprendizado de Máquina utilizada pela linguagem. Esta biblioteca implementa todas as funções predefinidas relacionadas com modelos de aprendizado e manipulação de conjuntos de dados.
+
+O diretório \texttt{Interpretador/LearningLib/dataset} contém a implementação das funções utilizadas para ler, salvar, e manipular conjuntos de dados. São elas \texttt{columns}, \texttt{remove\_columns}, \texttt{rows}, \texttt{num\_rows}, \texttt{load\_data}, e \texttt{save\_data}. Este diretório contém também a implementação de diversas funções utilizadas internamente pela biblioteca de aprendizado.
+
+O diretório \texttt{Interpretador/LearningLib/models} contém a implementação dos modelos de aprendizado: \textit{Perceptron}, \textit{Pocket-Perceptron}, \textit{Regressão Linear} e \textit{Regressão Logística}. Para cada um deles, foram implementadas funções para treinamento e predição, além de leitura e gravação em arquivo dos parâmetros e outras informações necessárias para a reconstrução destes modelos. Neste diretório também foram implementadas funcionalidades para pré-processamento e formatação dos conjuntos de dados, de forma a satisfazer requisitos de entrada para os algoritmos de treinamento. Estas funcionalidades estão implementadas no arquivo \texttt{Interpretador/LearningLib/models/preprocesss\_dataset.sml}. Como exemplos destas funcionalidades, é necessário normalizar os valores de atributos numéricos dos conjuntos de dados utiliza a média e o desvio padrão destes atributos, além disso, atributos categóricos precisam ser codificados como vetores \textit{one-hot}.
+
+
 \section{Funcionamento}
 
 \section{Manual de Uso}
+
+Criamos um script que facilita o uso do interpretador CML. Dentro do diretório \texttt{Interpretador}, execute o seguinte comando, substituindo onde indicado pelo caminho do fonte CML a ser interpretado:
+
+\begin{verbatim}
+./cml <CAMINHO PARA O FONTE>
+\end{verbatim}
+
+Este script apaga os arquivos temporários gerados por execuções anteriores do interpretador, recompila o interpretador, e invoca a interpretação do arquivo fornecido.
+
+É possível também compilar e invocar o interpretador manualmente. Dentro do diretório \texttt{Interpretador}, utilize o comando \texttt{sml} para abrir um console SML, e execute os seguinte comando neste console:
+
+\begin{verbatim}
+CM.make "CML.cm";
+\end{verbatim}
+
+Isto irá compilar os módulos necessários do interpretador. Ainda dentro do console SML, execute:
+
+\begin{verbatim}
+CML.interpret "<CAMINHO PARA O FONTE>"
+\end{verbatim}
+
+Isto irá invocar a função de interpretação de CML, com o arquivo informado como entrada. Esta função monta a árvore sintática, realiza a verificação de tipos, e interpreta o código.
+
+É possível visualizar a árvore sintática do código invocando a seguinte função:
+
+\begin{verbatim}
+CML.parse "<CAMINHO PARA O FONTE>"
+\end{verbatim}
+
+\section{Exemplos}
+
+Nesta sessão apresentaremos um conjunto de exemplos de uso da linguagem, com o objetivo de demonstrar o funcionamento das funcionalidades gerais da linguagem e dos algoritmos de Machine Learning.
+
+\subsection{Exemplos de Uso da Linguagem}
+
+De modo a demonstrar as funcionalidades básicas da linguagem, preparamos um conjunto de exemplos corretos e incorretos. Os exemplos corretos permitem observar o uso correto da linguagem, e foram planejados de forma a executar sem erros. Os exemplos incorretos permitem observar a capacidade do interpretador em identificar erros de sintaxe nos códigos. O interpretador deve ser capaz de informar o erro no momento da execução destes exemplos.
+
+Estes exemplos estão no diretório \texttt{Interpretador}, sendo que os exemplos corretos e incorretos estão em arquivos identificados com os prefixos \texttt{good} e \texttt{bad} (por exemplo, \texttt{Interpretador/good2.cml} ou \texttt{Interpretador/bad1.cml}).
+
+\subsection{Classificação usando Perceptron}
+O arquivo \texttt{Interpretador/classification1.cml} contém um exemplo do treinamento de um classificador do tipo Perceptron. O exemplo utiliza o conjunto de dados da planilha \texttt{demonstracao/classification1.csv}, composto por 180 linhas, cada uma com os atributos \texttt{x1}, \texttt{x2}, e \texttt{y}. Os dois primeiros atributos assumem valores reais e correspondem a posição de cada exemplo no plano, enquanto o terceiro pode assumir 1.0 ou -1.0.
+
+O objetivo será treinar um Perceptron capaz de classificar os pontos dentre positivos ou negativos, com base nos valores dos atributos \texttt{x1} e \texttt{x2}.
+
+O exemplo treina o classificador na linha:
+
+\begin{verbatim}
+model P = perceptron(X, y, 1000);
+\end{verbatim}
+
+Nesta função, \texttt{X} e \texttt{y} correspondem aos \textit{datasets} contendo as entradas e as saídas, respectivamente, enquanto o terceiro parâmetro corresponde a quantidade de iterações de treinamento a serem executadas.
+
+Para executar o arquivo, de dentro do diretório \texttt{Interpretador}, execute
+
+\begin{verbatim}
+./cml classification1.cml
+\end{verbatim}
+
+Este código treina o Perceptron e salva o modelo treinado no arquivo \texttt{Interpretador/P.model}. Em seguida ele usa o modelo treinado para predizer a categoria dos dados, e salva estas predições como uma nova planilha \texttt{demonstracao/classification1\_output.csv}.
+
+Como CML não possui funcionalidades para visualização dos dados, incluímos um conjunto de scripts em Python no diretório \texttt{demonstracao}, capazes de plotar os dados das planilhas originais e as predições. Para visualizar a predição do Perceptron, dentro de \texttt{demonstracao} execute:
+
+\begin{verbatim}
+python visualize_classification1.py classification1_output.csv
+\end{verbatim}
+
+Este script gera dois plots. O primeiro deles corresponde os dados originais, sem categorias, enquanto o segundo corresponde aos mesmos dados, porém coloridos de acordo com a categoria (positivo ou negativo) predita pelo classificador.
+
+\subsection{Classificação usando Pocket-Perceptron}
+
+O arquivo \texttt{Interpretador/classification2.cml} contém um exemplo de treinamento de um classificador do tipo Pocket-Perceptron. Este é um modelo de aprendizado similar ao Perceptron, porém capaz de lidar com dados não linearmente separáveis. Ele é menos eficiente para ser treinado, mas a velocidade de predição é a mesma do Perceptron.
+
+O exemplo utiliza um conjunto de dados armazenado na planilha \texttt{demonstracao/classification2.csv}. Este conjunto de dados é composto por 1800 exemplos, cada um deles com três atributos: \texttt{x1}, \texttt{x2}, que novamente representam a posição de um ponto no plano, e \texttt{color}, que representa a cor associada com o exemplo, que pode assumir as categorias \texttt{blue} ou \texttt{green}. O objetivo, novamente, é treinar um classificar capaz de classificar os pontos dentre azuis e verdes, com base nas coordenadas do ponto no plano. 
+
+Para executar este código, dentro da pasta \texttt{Interpretador}, execute:
+
+\begin{verbatim}
+./cml classification2.cml
+\end{verbatim}
+
+Este código treina o Pocket-Perceptron nos dados, e salva os dados do modelo no arquivo \texttt{Interpretador/PP.model}. Em seguida, ele usa o modelo treinado para realizar a predição das cores dos exemplos do conjunto de treinamento, e salva estas predições na planilha \texttt{demonstracao/classification2\_output.csv}.
+
+Para visualizar estas predições, dentro do diretório \texttt{demonstracao}, execute:
+
+\begin{verbatim}
+python visualize_classification2.py classification2_output.csv
+\end{verbatim}
+
+Este script irá gerar dois plots, o primeiro deles corresponde aos dados de entrada, com as cores corretas. Note que, diferente dos dados do exemplo anterior, este conjunto de dados não é linearmente separável, ou seja, não é possível traçar um hiper-plano (reta, no caso de duas dimensões) que separe as duas categorias. O Pocket-Perceptron é uma variação do Perceptron normal capaz de lidar com este tipo de situação. Ele treina por uma quantidade limitada de iterações, e reporta a melhor separação linear que ele foi capaz de encontrar. O segundo plot corresponde aos dados de entrada com as cores atribuídas pelo classificador. É possível perceber que ele separa as duas categorias com uma reta da melhor forma possível, dada a quantidade de iterações executadas.
+
+\subsection{Classificação usando Regressão Logística}
+
+O arquivo \texttt{Interpretador/logistic\_regression.cml} contém um exemplo de treinamento de um classificador para Regressão Logística. Diferente do Perceptron, que produz uma categoria como saída, este tipo de modelo é utilizado para predizer probabilidades sobre categorias.
+
+O exemplo utiliza os mesmos dados que o Pocket-Perceptron. Porém, o objetivo agora será estimar a probabilidade de cada ponto assumir a cor verde, com base nas suas coordenadas no plano.
+
+O treinamento é realizado na linha:
+
+\begin{verbatim}
+model logR = logistic_regression(X, y, "green", 0.01, 10, 100);
+\end{verbatim}
+
+Nesta função, \texttt{X} e \texttt{y} correspondem aos datasets contendo as entradas e saídas de treinamento, respectivamente. \texttt{"green"} é a categoria da saída da qual gostaríamos de estimar a probabilidade. 0.01 é a taxa de aprendizado, que corresponde à velocidade em que os parâmetros do modelo são atualizados ao longo das iterações, quanto maior, mais rápido, porém mais instável é o treinamento. 10 é o tamanho do \textit{batch} de treinamento, ou seja, a quantidade de exemplos analisados a cada iteração. E 100 é a quantidade de iterações do treinamento.
+
+A cada iteração, o algoritmo de treinamento busca ajustar os parâmetros do modelo de forma a minimizar a Entropia Cruzada Média, uma medida de erro bem comum em tarefas de aprendizado de máquina em que a saída represente uma probabilidade. O valor desta medida de erro é mostrado na tela a cada iteração.
+
+Para executar o código deste exemplo, dentro do diretório \texttt{Interpretador}, execute:
+
+\begin{verbatim}
+./cml logistic_regression.cml
+\end{verbatim}
+
+Este código treina um classificador para Regressão Logística e salva os parâmetros deste classificador no arquivo \texttt{Interpretador/logR.model}. Em seguida utiliza o modelo treinado para estimar a probabilidade de cada ponto do conjunto de treinamento ser verde, e salva estas probabilidades na planilha \texttt{demonstracao/logistic\_output.csv}.
+
+Para visualizar estas predições, dentro do diretório \texttt{demonstracao}, execute:
+
+\begin{verbatim}
+python visualize_logistic_regression.py logistic_output.csv
+\end{verbatim}
+
+Este script irá gerar dois plots. O primeiro deles corresponde aos dados originais com as respectivas cores, enquanto o segundo corresponde a um mapa de calor destes mesmos dados, onde o intervalo de cores corresponde ao intervalo $[0,1]$ atribuído pelo classificador. Observe que próximo aos pontos médios de cada cor, a probabilidade é bem intensa (bem alta ou bem baixa), pois o classificador tem um alto nível de certeza sobre a cor dos pontos nestas regiões, enquanto que no meio do caminho entre estes pontos médios, as probabilidades assumem valores intermediários, pois o classificador não tem muita certeza sobre a cor de pontos nesta região, atribuindo probabilidades próximas de 0.5.
+
+\subsection{Regressão Linear}
+
+O arquivo \texttt{Interpretador/linear\_regression.cml} contém um exemplo de treinamento de um modelo de Regressão Linear. Diferente dos modelos classificadores dos exemplos anteriores, que são treinados para produzirem categorias ou probabilidades sobre categorias como saída, um modelo de regressão linear pode produzir qualquer valor real.
+
+O exemplo utiliza o conjunto de dados armazenado na planilha \\ \texttt{demonstracao/linear\_regression.csv}. Cada exemplo deste conjunto de dados representa um imóvel, através de seu tamanho em $m^2$, e seu preço. O objetivo será treinar um modelo capaz de estimar o valor de um imóvel com base no seu tamanho.
+
+O treinamento é realizado na linha:
+
+\begin{verbatim}
+model linR = linear_regression(X, y, 0.01, 10, 1000);
+\end{verbatim}
+
+Nesta função, os parâmetros tem o mesmo significado da regressão logística, com a exceção de que agora, não é necessário informar a categoria, pois a saída será um valor contínuo.
+
+A cada iteração, o algoritmo de treinamento busca ajustar os parâmetros do modelo de forma a minimizar o Erro Quadrado Médio, uma medida de erro bem comum em tarefas de aprendizado de máquina em que a saída seja um valor contínuo. O valor desta medida de erro é mostrado na tela a cada iteração.
+
+Para executar o código deste exemplo, dentro do diretório \texttt{Interpretador}, execute:
+
+\begin{verbatim}
+./cml linear_regression.cml
+\end{verbatim}
+
+Este código treina um modelo de regressão linear e salva os parâmetros deste modelo no arquivo \texttt{Interpretador/linR.model}. Em seguida utiliza este modelo treinado para predizer o valor de cada imóvel, e salva estes valores na planilha \texttt{demonstracao/linear\_output.csv}.
+
+Para visualizar estas predições, dentro do diretório \texttt{demonstracao}, execute:
+
+\begin{verbatim}
+python visualize_linear_regression.py linear_output.csv
+\end{verbatim}
+
+O primeiro plot mostra aos dados originais, onde o eixo horizontal corresponde ao tamanho, e o eixo vertical corresponde ao valor do imóvel. O segundo plot mostra a mesma informação do primeiro, juntamente com a reta que passa pelos pontos correspondentes aos preços estimados pelo modelo para cada valor de $m^2$ presente no conjunto.
+
+\subsection{Um Exemplo mais Realista}
+
+De forma a ilustrar várias funcionalidades da linguagem, preparamos um exemplo mais complexo de treinamento e uso de um modelo de aprendizado. Para este exemplo, utilizamos o conjunto de dados \textit{TMDB 5000 Movie Dataset}\footnote{Disponível na plataforma de competições de \textit{data science} Kaggle, em \url{www.kaggle.com/tmdb/tmdb-movie-metadata}}. Este conjunto de dados corresponde a entradas da base de dados do site TMDb\footnote{\url{www.themoviedb.org}}, uma plataforma que mantém dados sobre filmes, e permite que usuários votem na qualidade destes filmes. 
+
+Este conjunto de dados contém 4803 exemplos, cada um deles com vários atributos, como elenco, gênero, orçamento, etc. Para este exemplo, removemos alguns destes atributos dos dados, que tornavam a tarefa muito mais complexa, mantendo apenas os atributos: orçamento, idioma original, lucro, duração, média dos votos do público, e quantidade de votos recebidos. O conjunto de dados modificado está na planilha \texttt{demonstracao/tmdb\_simple.csv}. 
+
+Os votos do público assumem valores no intervalo de 0 a 10, e o objetivo deste exemplo será treinar um modelo de regressão capaz de estimar a média dos votos com base nos outros atributos. Como este é um exemplo mais elaborado, iremos seguir boas práticas para projetos de Aprendizado de Máquina e separar este conjunto de dados em um conjunto de treinamento, que será utilizado para o treinamento do modelo de regressão, da mesma forma que os exemplos anteriores, e um conjunto de testes, que será utilizado para avaliar a capacidade de generalizar a predição para dados inéditos. O código para este exemplo se encontra no arquivo \texttt{Interpretador/tmdb.cml}.
+
+Este código explora diversas funcionalidades da linguagem CML.  Primeiramente, ele utiliza uma função para separar os dados em treinamento e teste, e esta função faz uso das funções predefinidas para manipulação de datasets \texttt{rows} e \texttt{num\_rows}. Basicamente, esta função está selecionado os \texttt{test\_size} primeiros elementos do dataset para compor o conjunto de testes, e selecionando os \texttt{train\_size} elementos seguintes para compor o conjunto de treinamento. Esta função retorna um array de datasets, contendo os conjuntos de treinamento e testes nas duas primeiras posições.
+
+Em seguida este código salva os conjuntos de treinamento e testes em duas planilhas separadas, \texttt{demonstracao/tmdb\_train.csv}, e \texttt{demonstracao/tmdb\_test.csv}, para então treinar um modelo de regressão linear por 500 iterações sobre o conjunto de treinamento. Este treinamento pode demorar dependendo da máquina em que o código estiver sendo executado. Ao final do treinamento, este código salva as informações do modelo treinado no arquivo \texttt{Interpretador/tmdb\_linreg.model}. Para evitar a execução de todo o processo de treinamento, já incluímos no projeto os arquivos gerados pela execução deste código.
+
+O arquivo \texttt{Interpretador/tmdb\_test.cml} usa este modelo treinado para predizer a média dos votos para os exemplos do conjunto de testes, que não foram utilizados para o treinamento do modelo. Em seguida este arquivo salva as predições no arquivo \texttt{demonstracao/tmdb\_predictions.csv} e as médias corretas em \texttt{demonstracao/tmdb\_correct.csv}.
+
+Incluímos um script que permite avaliar a qualidade da predição realizada. Dentro do diretório \texttt{demonstracao}, execute:
+
+\begin{verbatim}
+python tmdb_mean_absolute_error.py tmdb_correct.csv tmdb_predictions.csv
+\end{verbatim}
+
+Este script irá calcular o erro absoluto médio entre as predições e os médias de votos corretas para cada filme do conjunto de testes. Na nossa execução, este valor ficou em aproximadamente 0.8 (os votos são de 0 a 10). Lembre que estes dados não foram utilizados no processo de treinamento, indicando que o modelo adquiriu capacidade para generalizar o aprendizado para dados inéditos.
 
 \section{Facilidades e Dificuldades Encontradas}
 Cometemos um erro sutil na semântica denotacional, que impedia o funcionamento de funções mutuamente recursivas. Utilizamos a ideia das múltiplas passadas, $P1, P2, P3$, que iam redefinindo as funções para que enxergassem as demais. Por exemplo, considere o programa abaixo:
