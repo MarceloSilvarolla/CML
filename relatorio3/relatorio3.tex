@@ -1,6 +1,6 @@
 \documentclass[12pt]{article}
 %\usepackage[margin=1in]{geometry}% Change the margins here if you wish.
-%\setlength{\parindent}{0pt} % This is the set the indent length for new paragraphs, change if you want.
+%\setlength{\parindent}{0pt} % This is the set the indent length for new paragraphs, change if you want. 
 %\setlength{\parskip}{5pt} % This sets the distance between paragraphs, which will be used anytime you have a blank line in your LaTeX code.
 %\pagenumbering{gobble}% This means the page will not be numbered. You can comment it out if you like page numbers.
 
@@ -63,35 +63,68 @@
 \newpage
 \section{Estrutura Geral do Projeto}
 
-Nesta sessão explicaremos como feita a estruturação do projeto. Toda a lógica de funcionamento da linguagem está dentro do diretório \texttt{Interpretador}.
+No diretório \texttt{demonstracao} encontram-se arquivos usados nos exemplos descritos na seção \ref{Exemplos}. Os relatórios 1 e 2 modificados estão nos diretórios \texttt{relatorio1} e \texttt{relatorio2}, enquanto que este relatório está no diretório \texttt{relatorio3}.
 
-O arquivo \texttt{Interpretador/interpreter.sml} é são realizadas as tarefas principais da interpretação. Este arquivo contém a função \texttt{interpret}, que é responsável por obter a árvore sintática do código fornecido, realizar a verificação de tipos, e se não ocorrer nenhum erro nestas etapas, interpretar o código.
+\red{TODO: passar a limpo README.md para cá, e também toExplainList.txt}
 
-O arquivo \texttt{Interpretador/Aux/auxiliary.sml}, contém as seguintes estruturas:
+O diretório \texttt{Interpretador} é o principal do projeto. Contém
 
+\begin{enumerate}
+	\item arquivos com extensão ".cml", que são exemplos para teste, conforme descrito na seção \ref{Exemplos}
+	\item um \textit{script} chamado \texttt{cml} para facilitar o uso do interpretador, conforme descrito no Manual (seção \ref{Man})
+	\item \texttt{CML.cm}, responsável pela compilação do nosso código
+	\item \texttt{CML.lex}, o analisador léxico
+	\item \texttt{CML.yacc}, o analisador sintático
+	\item \texttt{datatypes.sml}, o qual especifica a estrutura das \textit{parse trees} abstratas.
+	\item \texttt{glue.sml}, arquivo para integração de Lex com Yacc.
+	\item \texttt{interpreter.sml}, que realiza as tarefas principais da interpretação. Este arquivo contém a função \texttt{interpret}, que é responsável por obter a árvore sintática do código fornecido, realizar a verificação de tipos, e se não ocorrer nenhum erro nestas etapas, executar o código.
+	\item \texttt{Aux/auxiliary.sml}, arquivo de funções auxiliares para interpretação, que contém as seguintes estruturas:
 \begin{itemize}
-\item \texttt{Location}: Define o tipo \texttt{location}, que representa posições da \textit{store}, onde os dados ficam armazenados.
+\item \texttt{Location}: Define o  \texttt{type location}, que representa posições da \textit{store}, onde os dados ficam armazenados.
 
-\item \texttt{ArrayValue}: Define o tipo \texttt{arrayValue}, que representa os arrays na linguagem. Arrays em CML são implementados como listas de \textit{locations}, onde cada location aramazena o valor de um elemento do array (que pode ser outro array, no caso de arrays de mais de uma dimensão).
+\item \texttt{ArrayValue}: Define o \texttt{type arrayValue}, que representa os arrays na linguagem. Arrays em CML são implementados como listas de \textit{locations}, onde cada location aramazena o valor de um elemento do array (que pode ser outro array, no caso de arrays de mais de uma dimensão).
 
-\item \texttt{ExpressibleValue}: Representa o conjunto de tipos que são aceitos como resultado de uma expressão. Define o tipo composto \texttt{expressibleValue}, que pode ser dos tipos: \texttt{Int}, \texttt{Real}, \texttt{Bool}, \texttt{Char}, \texttt{String}, \texttt{Dataset}, \texttt{Model}, \texttt{ArrayValue}, ou \texttt{VoidValue}. Este último representa o tipo do retorno de funções \texttt{void}, não sendo usado para atribuições de variáveis.
+\item \texttt{ExpressibleValue}: Representa o conjunto de tipos que são aceitos como resultado de uma expressão. Define o \texttt{datatype expressibleValue}, que pode ser \texttt{Int}, \texttt{Real}, \texttt{Bool}, \texttt{Char}, \texttt{String}, \texttt{Dataset}, \texttt{Model}, \texttt{ArrayValue}, ou \texttt{VoidValue}. Este último representa o tipo do retorno de funções \texttt{void}, não sendo usado para atribuições de variáveis.
 
-\item \texttt{StorableValue}: Define o tipo composto\texttt{storableValue}, que representa os tipos que podem ser armazenados na \textit{store}, e pode assumir os mesmos tipos presentos no \texttt{expressibleValue}, com exceção de \texttt{VoidValue}, além dos tipos \texttt{Unused}, que representa uma localização que não foi associada a nenhuma variável, e \texttt{Undefined}, que representa uma localização que foi atribuída a uma variável que ainda não recebeu nenhuma atribuição.
+\item \texttt{StorableValue}: Define o \texttt{datatype storableValue}, que representa os tipos que podem ser armazenados na \textit{store}, e pode assumir os mesmos tipos presentes no \texttt{expressibleValue}, com exceção de \texttt{VoidValue}, além dos tipos \texttt{Unused}, que representa uma localização que não foi associada a nenhuma variável, e \texttt{Undefined}, que representa uma localização que foi atribuída a uma variável que ainda não recebeu nenhuma atribuição.
 
 \item \texttt{Store}: Contém os dados que estão sendo armazendas durante a execução de um programa em CML. É responsável por fornecer funções de alocação e desalocação de localizações, além de atualização e acesso a valores armazenados na \textit{store}.
 
-\item \texttt{Function}: Define o tipo \texttt{function}, responsável por representar uma função em CML. Funções em CML são representadas em SML através de uma outra função, que recebe uma lista de localizações e uma instância da \textit{store}, onde estas localizações armazenam os valores que a função deve receber como parâmetro, e devolve um \texttt{ExpressibleValue}.
+\item \texttt{Function}: Define o tipo \texttt{function}, responsável por representar uma função de CML. Funções de CML são representadas em SML através de uma outra função, que recebe uma lista de localizações e uma instância da \textit{store}, onde estas localizações armazenam os valores que a função deve receber como parâmetro, e devolve um \texttt{ExpressibleValue}.
 
 \item \texttt{DenotableValue}: Define o tipo \texttt{denotableValue}, responsável por representar aquilo que pode ser associado com um identificador da linguagem. Pode ser do tipo \texttt{Location}, que significa uma posição da \textit{store} onde algum  \textit{ExpressibleValue} está armazenado, \texttt{Function}, que representa uma função em CML, ou \texttt{Unbound}, que é associado a qualquer identificador que não tenha sido declarado como uma variável ou definido com uma função na linguagem.
 
 \item \texttt{ReturnFlag}: Define o tipo \texttt{returnFlag}, que simplesmente assume um valor booleano, responsável por representar a ocorrência de um comando \texttt{return}.
 
-\item \texttt{LearningAuxBridge}: Responsável por traduzir as chamadas de funções predefinidas para chamadas das funções da biblioteca de Aprendizado de Máquina. Assim como as funções que são definidas em CML, as funções predefinidas também recebem uma lista de localizações e um \textit{store} contendo os valores dos parâmetros. Esta estrutura é responsável por obter os valores destes parâmetros da \textit{store} e invocar as respectivas funções na Aprendizado de Máquina.
+\item \texttt{LearningAuxBridge}: Responsável por traduzir as chamadas de funções predefinidas para chamadas das funções da biblioteca de Aprendizado de Máquina. Assim como as funções que são definidas em CML, as funções predefinidas também recebem uma lista de localizações e uma \textit{store} contendo os valores dos parâmetros. Esta estrutura é responsável por obter os valores destes parâmetros da \textit{store} e invocar as respectivas funções na Aprendizado de Máquina.
 
-\item \texttt{Print}: Responsável por definir as funções de escrita em CML, \texttt{print} e \texttt{println}.
+\item \texttt{Print}: Responsável por definir as funções de escrita em CML, \texttt{print} e \texttt{println}. Estas funções não estavam previstas em fases anteriores, mas implementamos para facilitar a depuração, tanto de códigos em CML, quanto do próprio interpretador.
  
 \item \texttt{Env}: Responsável por definir o \textit{environment}, que pode ser interpretado como uma função que mapeia cada identificadores da linguagem para um \texttt{DenotableValue}. Nomes de variáveis são mapeados para \texttt{Locations}, nomes de funções são mapeados para \texttt{Functions}, e identificadores não declarados são mapeados para \texttt{Unbound}. Fornece funções para associar identificadores com \texttt{DenotableValues} e acessar \texttt{DenotableValues} associados com identificadores.
+
+\item \texttt{Sort}: Usada para a checagem de tipos, esta estrutura define o \texttt{datatype sort} e funções auxiliares básicas que o usam. Mais especificamente, os valores de tipo (em SML) \texttt{sort} representam um tipo de CML, podendo ser \texttt{Int, Real, Char, Bool, String, Dataset, Model, Array, Void, Unbound, Any, Product} ou \texttt{To}. O tipo especial \texttt{Any} serve de substituto a um tipo desconhecido da linguagem. Por exemplo, ao fazermos a checagem da expressão \texttt{\{\}} em
+
+\begin{Verbatim}
+int[] v = {};
+\end{Verbatim}
+
+não sabemos se o array vazio é um array de inteiros, reais, strings, etc., então o tipificamos como Array de Any.
+
+Adicionamos \texttt{Product} e \texttt{To} para representar tipos produto e mapeamentos, respectivamente. Por exemplo, no código
+
+\begin{Verbatim}
+dataset f(int x, real y);
+\end{Verbatim}
+
+\texttt{f} recebe o tipo \texttt{To (Product [Int, Real], Dataset) }.
+
+A função mais importante de \texttt{Sort} é a \texttt{commonSort}, que extrai o tipo mais específico entre dois tipos. Por exemplo, dentre \texttt{Array Any} e \texttt{Array Int}, o segundo é mais específico.
+
+\item \texttt{LocalTypeEnv}: Define o \textit{environment} de tipos local, que contém os tipos de todas as variáveis declaradas no escopo atual. É utilizada para detectar declarações múltiplas de uma mesma variável no mesmo bloco.
+
+\item \texttt{GlobalTypeEnv}: Define o \textit{environment} de tipos global, que contém os tipos de todas as variáveis declaradas. É utilizada para a verificação de tipos, por exemplo em \texttt{x = 42;}, quando se verifica que o tipo de \texttt{x} é, de fato, \texttt{int}.
 \end{itemize}
+\end{enumerate}
 
 O diretório \texttt{Interpretador/LearningLib} contém a biblioteca de Aprendizado de Máquina utilizada pela linguagem. Esta biblioteca implementa todas as funções predefinidas relacionadas com modelos de aprendizado e manipulação de conjuntos de dados.
 
@@ -102,7 +135,7 @@ O diretório \texttt{Interpretador/LearningLib/models} contém a implementação
 
 \section{Funcionamento}
 
-\section{Manual de Uso}
+\section{Manual de Uso}\label{Man}
 
 Criamos um script que facilita o uso do interpretador CML. Dentro do diretório \texttt{Interpretador}, execute o seguinte comando, substituindo onde indicado pelo caminho do fonte CML a ser interpretado:
 
@@ -132,7 +165,7 @@ Isto irá invocar a função de interpretação de CML, com o arquivo informado 
 CML.parse "<CAMINHO PARA O FONTE>"
 \end{verbatim}
 
-\section{Exemplos}
+\section{Exemplos}\label{Exemplos}
 
 Nesta sessão apresentaremos um conjunto de exemplos de uso da linguagem, com o objetivo de demonstrar o funcionamento das funcionalidades gerais da linguagem e dos algoritmos de Machine Learning.
 

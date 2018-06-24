@@ -1,6 +1,6 @@
 
 
-/*eu sou um comentário muito louco!!!!!*/
+/* Acentos nao sao permitidos na linguagem */
 
 
 char[] cára = {'c', 'b', 'x'};

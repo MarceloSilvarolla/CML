@@ -1016,7 +1016,7 @@ struct
 
   |   C(DataTypes.Skip)(env,sto) = (sto, false, ExpressibleValue.VoidValue)
 
-  (* Part 4: putting everything together (i.e., interpreting) *)
+  (* 4: putting everything together (i.e., interpreting) *)
   and interpret(fileName:string):unit =
         let
           val parseTree = parse(fileName)
