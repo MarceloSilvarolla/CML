@@ -65,8 +65,6 @@
 
 No diretório \texttt{demonstracao} encontram-se arquivos usados nos exemplos descritos na seção \ref{Exemplos}. Os relatórios 1 e 2 modificados estão nos diretórios \texttt{relatorio1} e \texttt{relatorio2}, enquanto que este relatório está no diretório \texttt{relatorio3}.
 
-\red{TODO: passar a limpo README.md para cá, e também toExplainList.txt}
-
 O diretório \texttt{Interpretador} é o principal do projeto. Contém
 
 \begin{enumerate}
@@ -138,8 +136,6 @@ A função mais importante de \texttt{Sort} é a \texttt{commonSort}, que extrai
 \end{enumerate}
 
 
-
-\section{Funcionamento}
 
 \section{Manual de Uso}\label{Man}
 
@@ -319,32 +315,83 @@ python tmdb_mean_absolute_error.py tmdb_correct.csv tmdb_predictions.csv
 Este script irá calcular o erro absoluto médio entre as predições e os médias de votos corretas para cada filme do conjunto de testes. Na nossa execução, este valor ficou em aproximadamente 0.8 (os votos são de 0 a 10). Lembre que estes dados não foram utilizados no processo de treinamento, indicando que o modelo adquiriu capacidade para generalizar o aprendizado para dados inéditos.
 
 \section{Facilidades e Dificuldades Encontradas}
-Cometemos um erro sutil na semântica denotacional, que impedia o funcionamento de funções mutuamente recursivas. Utilizamos a ideia das múltiplas passadas, $P1, P2, P3$, que iam redefinindo as funções para que enxergassem as demais. Por exemplo, considere o programa abaixo:
+\subsection{Problema das passadas}
+	 Cometemos um erro sutil na semântica denotacional, que impedia o funcionamento de funções mutuamente recursivas. Utilizamos a ideia das múltiplas passadas, $P1, P2, P3$, que iam redefinindo as funções para que enxergassem as demais. Por exemplo, considere o programa abaixo:
+	
+	\begin{verbatim}
+	int main() {
+	g(8); // 1337
+	return 0;
+	}
+	
+	int f(int x) {
+	if(x == 0) { return 42; }
+	return g(x - 1);
+	}
+	
+	int g(int x) {
+	if(x == 0) { return 1337; }
+	return f(x - 1);
+	}
+	
+	\end{verbatim}
+	
+	Na primeira passada, \texttt{g} conhece \texttt{f}, que não conhece \texttt{g}.
+	Na segunda passada, \texttt{g} conhece a \texttt{f} da segunda passada, que, por sua vez, conhece a \texttt{g} da primeira passada. Portanto, ao fazermos a chamada a \texttt{g} no \texttt{main}, depois de um certo número de chamadas recursivas, chegamos numa chamada de \texttt{g} dentro da \texttt{f} da primeira passada, que não a conhece, resultando em erro.
+	
+	No interpretador, mudamos a implementação para que as funções fossem adicionadas no \textit{environment} simultaneamente. Assim, todas se enxergam mutuamente.
+	
+\subsection{Verificação de tipos}
+Intuitivamente, acreditávamos no início do projeto que implementar uma linguagem tipada seria mais fácil do que uma não-tipada. Isso porque parece haver uma certa mágica por trás de algo do tipo
+\begin{Verbatim}
+x = 5; x = {1,2,3,2,1,5,2,2};
+\end{Verbatim}
 
-\begin{verbatim}
-int main() {
-  g(8); // 1337
-  return 0;
-}
+Porém, como a memória é abstraída pela \textit{Store}, os dois comandos acima são triviais. O valor que é armazenado na \textit{Store} pode ser inteiro ou vetor, e isto não faz diferença no interpretador.
 
-int f(int x) {
-  if(x == 0) { return 42; }
-  return g(x - 1);
-}
+\subsection{Implementação dos Algoritmos de Machine Learning}
+A implementação dos algoritmos de Machine Learning resultou em mais de 1100 linhas de código.
 
-int g(int x) {
-  if(x == 0) { return 1337; }
-  return f(x - 1);
-}
+\subsection{MLLex e MLYacc}
+Sentimos falta de um bom tutorial para utilização destas ferramentas. Já tínhamos o CLex e o CYacc prontos desde a fase anterior e, mesmo assim, gastamos bastante tempo fazendo a tradução para MLLex e MLYacc.
 
-\end{verbatim}
+\subsection{O nome da linguagem}
+Achamos genial a ideia de chamar a linguagem de CML: é composta pelas iniciais de nossos nomes, pode ser interpretada como "C para Machine Learning", e parece com SML, a linguagem do interpretador.
 
-Na primeira passada, \texttt{g} conhece \texttt{f}, que não conhece \texttt{g}.
-Na segunda passada, \texttt{g} conhece a \texttt{f} da segunda passada, que, por sua vez, conhece a \texttt{g} da primeira passada. Portanto, ao fazermos a chamada a \texttt{g} no \texttt{main}, depois de um certo número de chamadas recursivas, chegamos numa chamada de \texttt{g} dentro da \texttt{f} da primeira passada, que não a conhece.
+Achamos menos genial esta ideia quando digitamos
 
+\begin{Verbatim}
+CML.make "CM.sml"
+\end{Verbatim}
+
+ao invés de
+\begin{Verbatim}
+CM.make "CML.cm"
+\end{Verbatim}
+
+\subsection{\textit{git}}
+O \textit{git} foi uma dificuldade, pois dois integrantes do grupo não o conheciam muito bem. Ao mesmo tempo foi uma facilidade, pois tornou a manutenção e sincronização de código muito mais fácil, com criações de novas \textit{branches}, etc.
+
+\subsection{\texttt{datatypes.sml}}
+O CM e as bibliotecas de MLLex e MLYacc que usamos permitem que especifiquemos as estruturas que armazenam as \textit{parse trees}, tornando-as mais abstratas, sem a inclusão, por exemplo, de ";" nas expressões-comando.
+
+\subsection{Conversão da semântica denotacional para SML}
+Foi fácil. Praticamente uma cópia.
+
+\subsection{CLex e CYacc}
+O fato de termos feito os arquivos CLex e CYacc na fase anterior facilitou bastante a escrita do MLLex e MLYacc correspondentes.
+
+\section{Curiosidades}
+As funções predefinidas \texttt{print} e \texttt{println} que criamos são polimórficas, podendo receber valores de quaisquer tipos. Não seria difícil de implementarmos um tipo \texttt{any} na linguagem que define uma variável que pode assumir qualquer valor de qualquer tipo. Por exemplo, poderíamos ter um código como
+\begin{Verbatim}
+any x = 42; x = {1,2,3}; x = 5.2;
+\end{Verbatim}
+
+na nossa linguagem.
 \section{Conclusão}
+Durante esta disciplina, construímos uma linguagem para Machine Learning baseando-nos em C. Sofremos e aprendemos bastante. A nossa linguagem, embora, no estado atual, não seja uma boa opção comparada com linguagens como \textit{Python}, ela tem potencial. De fato, CML tem checagem de tipos, que evita códigos que especificam tipos de parâmetros em comentários em \textit{Python}. Além disso, é possível adicionar elementos sintáticos específicos para Machine Learning, algo que uma linguagem de propósito geral jamais teria.
 
-\begin{thebibliography}{9}
+\begin{thebibliography}{8}
 \bibitem{Chap9}
   Slonneger, Kenneth and Kurtz, Barry L
   \textit{Formal syntax and semantics of programming languages},
@@ -353,6 +400,18 @@ Na segunda passada, \texttt{g} conhece a \texttt{f} da segunda passada, que, por
   Disponível em \url{http://www.divms.uiowa.edu/~slonnegr/plf/Book/Chapter9.pdf}
 
 \item ANSI C Yacc Grammar - \url{http://www.quut.com/c/ANSI-C-grammar-y.html}
+
+\item MLLex - gerador de analisadores léxicos -  \url{https://www.smlnj.org/doc/ML-Lex} 
+
+\item MLYacc - gerador de analisadores sintáticos - \url{http://www.smlnj.org/doc/ML-Yacc/}
+
+\item SML/NJ Compilation Manager - gerenciador de compilação para uso de MLLex e MLYacc - \url{https://www.smlnj.org/doc/CM/index.html}
+
+\item User's guide to MLLex and MLYacc - guia de MLLex, MLYacc e SML/NJ Compilation Manager \url{www.cs.tufts.edu/comp/181/ug.pdf}
+
+\item ANSI C Yacc grammar - gramática em Yacc e Lex para ANSI C - \url{http://www.quut.com/c/ANSI-C-grammar-y.html}
+
+\item ANSI C Lex specification - especificação Lex para ANSI C - \url{http://www.quut.com/c/ANSI-C-grammar-l-2011.html}
 \end{thebibliography}
 	
 \end{document}
