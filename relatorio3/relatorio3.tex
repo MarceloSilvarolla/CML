@@ -85,7 +85,7 @@ O diretório \texttt{Interpretador} é o principal do projeto. Contém
 
 \item \texttt{ExpressibleValue}: Representa o conjunto de tipos que são aceitos como resultado de uma expressão. Define o \texttt{datatype expressibleValue}, que pode ser \texttt{Int}, \texttt{Real}, \texttt{Bool}, \texttt{Char}, \texttt{String}, \texttt{Dataset}, \texttt{Model}, \texttt{ArrayValue}, ou \texttt{VoidValue}. Este último representa o tipo do retorno de funções \texttt{void}, não sendo usado para atribuições de variáveis.
 
-\item \texttt{StorableValue}: Define o \texttt{datatype storableValue}, que representa os tipos que podem ser armazenados na \textit{store}, e pode assumir os mesmos tipos presentes no \texttt{expressibleValue}, com exceção de \texttt{VoidValue}, além dos tipos \texttt{Unused}, que representa uma localização que não foi associada a nenhuma variável, e \texttt{Undefined}, que representa uma localização que foi atribuída a uma variável que ainda não recebeu nenhuma atribuição.
+\item \texttt{StorableValue}: Define o \texttt{datatype storableValue}, que representa os tipos que podem ser armazenados na \textit{store}, e pode assumir os mesmos tipos presentes no \texttt{expressibleValue}, com exceção de \texttt{VoidValue}, além dos tipos \texttt{Unused}, que representa uma localização que não foi associada a nenhuma variável, e \texttt{Undefined}, que representa uma localização que foi associada a uma variável que ainda não recebeu nenhuma atribuição.
 
 \item \texttt{Store}: Contém os dados que estão sendo armazendas durante a execução de um programa em CML. É responsável por fornecer funções de alocação e desalocação de localizações, além de atualização e acesso a valores armazenados na \textit{store}.
 
@@ -95,11 +95,11 @@ O diretório \texttt{Interpretador} é o principal do projeto. Contém
 
 \item \texttt{ReturnFlag}: Define o tipo \texttt{returnFlag}, que simplesmente assume um valor booleano, responsável por representar a ocorrência de um comando \texttt{return}.
 
-\item \texttt{LearningAuxBridge}: Responsável por traduzir as chamadas de funções predefinidas para chamadas das funções da biblioteca de Aprendizado de Máquina. Assim como as funções que são definidas em CML, as funções predefinidas também recebem uma lista de localizações e uma \textit{store} contendo os valores dos parâmetros. Esta estrutura é responsável por obter os valores destes parâmetros da \textit{store} e invocar as respectivas funções na Aprendizado de Máquina.
+\item \texttt{LearningAuxBridge}: Responsável por traduzir as chamadas de funções predefinidas para chamadas das funções da biblioteca de Aprendizado de Máquina. Assim como as funções que são definidas em CML, as funções predefinidas também recebem uma lista de localizações e uma \textit{store} contendo os valores dos parâmetros. Esta estrutura é responsável por obter os valores destes parâmetros da \textit{store} e invocar as respectivas funções na biblioteca de Aprendizado de Máquina.
 
 \item \texttt{Print}: Responsável por definir as funções de escrita em CML, \texttt{print} e \texttt{println}. Estas funções não estavam previstas em fases anteriores, mas implementamos para facilitar a depuração, tanto de códigos em CML, quanto do próprio interpretador.
  
-\item \texttt{Env}: Responsável por definir o \textit{environment}, que pode ser interpretado como uma função que mapeia cada identificadores da linguagem para um \texttt{DenotableValue}. Nomes de variáveis são mapeados para \texttt{Locations}, nomes de funções são mapeados para \texttt{Functions}, e identificadores não declarados são mapeados para \texttt{Unbound}. Fornece funções para associar identificadores com \texttt{DenotableValues} e acessar \texttt{DenotableValues} associados com identificadores.
+\item \texttt{Env}: Responsável por definir o \textit{environment}, que pode ser interpretado como uma função que mapeia cada identificador da linguagem para um \texttt{DenotableValue}. Nomes de variáveis são mapeados para \texttt{Locations}, nomes de funções são mapeados para \texttt{Functions}, e identificadores não declarados são mapeados para \texttt{Unbound}. Fornece funções para associar identificadores com \texttt{DenotableValues} e acessar \texttt{DenotableValues} associados com identificadores.
 
 \item \texttt{Sort}: Usada para a checagem de tipos, esta estrutura define o \texttt{datatype sort} e funções auxiliares básicas que o usam. Mais especificamente, os valores de tipo (em SML) \texttt{sort} representam um tipo de CML, podendo ser \texttt{Int, Real, Char, Bool, String, Dataset, Model, Array, Void, Unbound, Any, Product} ou \texttt{To}. O tipo especial \texttt{Any} serve de substituto a um tipo desconhecido da linguagem. Por exemplo, ao fazermos a checagem da expressão \texttt{\{\}} em
 
@@ -123,11 +123,11 @@ A função mais importante de \texttt{Sort} é a \texttt{commonSort}, que extrai
 
 \item \texttt{GlobalTypeEnv}: Define o \textit{environment} de tipos global, que contém os tipos de todas as variáveis declaradas. É utilizada para a verificação de tipos, por exemplo em \texttt{x = 42;}, quando se verifica que o tipo de \texttt{x} é, de fato, \texttt{int}.
 \end{itemize}
-\item \texttt{LearningLib}, diretório que contém a biblioteca de Aprendizado de Máquina utilizada pela linguagem. Esta biblioteca implementa todas as funções predefinidas relacionadas com modelos de aprendizado e manipulação de conjuntos de dados. A interface é exportada pelo arquivo learning.sml, e a compilação é feita por \texttt{LearningLib.cm}. Ele contém os seguintes subdiretórios:
+\item \texttt{LearningLib}, diretório que contém a biblioteca de Aprendizado de Máquina utilizada pela linguagem. Esta biblioteca implementa todas as funções predefinidas relacionadas com modelos de aprendizado e manipulação de conjuntos de dados. A interface é exportada pelo arquivo \texttt{learning.sml}, e a compilação é feita por \texttt{LearningLib.cm}. Ele contém os seguintes subdiretórios:
 
 \begin{itemize} \item \texttt{dataset}, diretório que contém a implementação das funções utilizadas para ler, salvar, e manipular conjuntos de dados. São elas \texttt{columns}, \texttt{remove\_columns}, \texttt{rows}, \texttt{num\_rows}, \texttt{load\_data}, e \texttt{save\_data}. Este diretório contém também a implementação de diversas funções utilizadas internamente pela biblioteca de aprendizado.
 
-\item \texttt{models}, o qual contém a implementação dos modelos de aprendizado: \textit{Perceptron}, \textit{Pocket-Perceptron}, \textit{Regressão Linear} e \textit{Regressão Logística}. Para cada um deles, foram implementadas funções para treinamento e predição, além de leitura e gravação em arquivo dos parâmetros e outras informações necessárias para a reconstrução destes modelos. Neste diretório também foram implementadas funcionalidades para pré-processamento e formatação dos conjuntos de dados, de forma a satisfazer requisitos de entrada para os algoritmos de treinamento. Estas funcionalidades estão implementadas no arquivo \texttt{preprocesss\_dataset.sml}. Como exemplos destas funcionalidades, é necessário normalizar os valores de atributos numéricos dos conjuntos de dados utiliza a média e o desvio padrão destes atributos, além disso, atributos categóricos precisam ser codificados como vetores \textit{one-hot}.
+\item \texttt{models}, o qual contém a implementação dos modelos de aprendizado: \textit{Perceptron}, \textit{Pocket-Perceptron}, \textit{Regressão Linear} e \textit{Regressão Logística}. Para cada um deles, foram implementadas funções para treinamento e predição, além de leitura e gravação em arquivo dos parâmetros e outras informações necessárias para a reconstrução destes modelos. Neste diretório também foram implementadas funcionalidades para pré-processamento e formatação dos conjuntos de dados, de forma a satisfazer requisitos de entrada para os algoritmos de treinamento. Estas funcionalidades estão implementadas no arquivo \texttt{preprocesss\_dataset.sml}. Como exemplos destas funcionalidades, é necessário normalizar os valores de atributos numéricos dos conjuntos de dados utilizando a média e o desvio padrão destes atributos, além disso, atributos categóricos precisam ser codificados como vetores \textit{one-hot}.
 
 \item \texttt{testesDeMachineLearning}, que contém testes para a biblioteca de Machine Learning independentes do interpretador. Estes testes podem ser ignorados para fins de correção.
 \end{itemize}
@@ -156,7 +156,7 @@ CM.make "CML.cm";
 Isto irá compilar os módulos necessários do interpretador. Ainda dentro do console SML, execute:
 
 \begin{verbatim}
-CML.interpret "<CAMINHO PARA O FONTE>"
+CML.interpret "<CAMINHO PARA O FONTE>";
 \end{verbatim}
 
 Isto irá invocar a função de interpretação de CML, com o arquivo informado como entrada. Esta função monta a árvore sintática, realiza a verificação de tipos, e interpreta o código.
@@ -175,7 +175,7 @@ Nesta seção apresentaremos um conjunto de exemplos de uso da linguagem, com o 
 
 De modo a demonstrar as funcionalidades básicas da linguagem, preparamos um conjunto de exemplos corretos e incorretos. Os exemplos corretos permitem observar o uso correto da linguagem, e foram planejados de forma a executar sem erros. Os exemplos incorretos permitem observar a capacidade do interpretador em identificar erros de sintaxe nos códigos. O interpretador deve ser capaz de informar o erro no momento da execução destes exemplos.
 
-Estes exemplos estão no diretório \texttt{Interpretador}, sendo que os exemplos corretos e incorretos estão em arquivos identificados com os prefixos \texttt{good} e \texttt{bad} (por exemplo, \texttt{Interpretador/good2.cml} ou \texttt{Interpretador/bad1.cml}).
+Estes exemplos estão no diretório \texttt{Interpretador}, sendo que os exemplos corretos e incorretos estão em arquivos identificados com os prefixos \texttt{good} e \texttt{bad} (por exemplo,\\ \texttt{Interpretador/good2.cml} ou \texttt{Interpretador/bad1.cml}).
 
 \subsection{Classificação usando Perceptron}
 O arquivo \texttt{Interpretador/classification1.cml} contém um exemplo do treinamento de um classificador do tipo Perceptron. O exemplo utiliza o conjunto de dados da planilha \texttt{demonstracao/classification1.csv}, composto por 180 linhas, cada uma com os atributos \texttt{x1}, \texttt{x2}, e \texttt{y}. Os dois primeiros atributos assumem valores reais e correspondem a posição de cada exemplo no plano, enquanto o terceiro pode assumir 1.0 ou -1.0.
@@ -210,7 +210,7 @@ Este script gera dois plots. O primeiro deles corresponde os dados originais, se
 
 O arquivo \texttt{Interpretador/classification2.cml} contém um exemplo de treinamento de um classificador do tipo Pocket-Perceptron. Este é um modelo de aprendizado similar ao Perceptron, porém capaz de lidar com dados não linearmente separáveis. Ele é menos eficiente para ser treinado, mas a velocidade de predição é a mesma do Perceptron.
 
-O exemplo utiliza um conjunto de dados armazenado na planilha \texttt{demonstracao/classification2.csv}. Este conjunto de dados é composto por 1800 exemplos, cada um deles com três atributos: \texttt{x1}, \texttt{x2}, que novamente representam a posição de um ponto no plano, e \texttt{color}, que representa a cor associada com o exemplo, que pode assumir as categorias \texttt{blue} ou \texttt{green}. O objetivo, novamente, é treinar um classificar capaz de classificar os pontos dentre azuis e verdes, com base nas coordenadas do ponto no plano. 
+O exemplo utiliza um conjunto de dados armazenado na planilha\\ \texttt{demonstracao/classification2.csv}. Este conjunto de dados é composto por 1800 exemplos, cada um deles com três atributos: \texttt{x1}, \texttt{x2}, que novamente representam a posição de um ponto no plano, e \texttt{color}, que representa a cor associada com o exemplo, que pode assumir as categorias \texttt{blue} ou \texttt{green}. O objetivo, novamente, é treinar um classificador capaz de classificar os pontos dentre azuis e verdes, com base nas coordenadas do ponto no plano. 
 
 Para executar este código, dentro da pasta \texttt{Interpretador}, execute:
 
@@ -304,7 +304,7 @@ Este código explora diversas funcionalidades da linguagem CML.  Primeiramente, 
 
 Em seguida este código salva os conjuntos de treinamento e testes em duas planilhas separadas, \texttt{demonstracao/tmdb\_train.csv}, e \texttt{demonstracao/tmdb\_test.csv}, para então treinar um modelo de regressão linear por 500 iterações sobre o conjunto de treinamento. Este treinamento pode demorar dependendo da máquina em que o código estiver sendo executado. Ao final do treinamento, este código salva as informações do modelo treinado no arquivo \texttt{Interpretador/tmdb\_linreg.model}. Para evitar a execução de todo o processo de treinamento, já incluímos no projeto os arquivos gerados pela execução deste código.
 
-O arquivo \texttt{Interpretador/tmdb\_test.cml} usa este modelo treinado para predizer a média dos votos para os exemplos do conjunto de testes, que não foram utilizados para o treinamento do modelo. Em seguida este arquivo salva as predições no arquivo \texttt{demonstracao/tmdb\_predictions.csv} e as médias corretas em \texttt{demonstracao/tmdb\_correct.csv}.
+O arquivo \texttt{Interpretador/tmdb\_test.cml} usa este modelo treinado para predizer a média dos votos para os exemplos do conjunto de testes, que não foram utilizados para o treinamento do modelo. Em seguida este arquivo salva as predições no arquivo\\ \texttt{demonstracao/tmdb\_predictions.csv} e as médias corretas em \texttt{demonstracao/tmdb\_correct.csv}.
 
 Incluímos um script que permite avaliar a qualidade da predição realizada. Dentro do diretório \texttt{demonstracao}, execute:
 
@@ -312,7 +312,7 @@ Incluímos um script que permite avaliar a qualidade da predição realizada. De
 python tmdb_mean_absolute_error.py tmdb_correct.csv tmdb_predictions.csv
 \end{verbatim}
 
-Este script irá calcular o erro absoluto médio entre as predições e os médias de votos corretas para cada filme do conjunto de testes. Na nossa execução, este valor ficou em aproximadamente 0.8 (os votos são de 0 a 10). Lembre que estes dados não foram utilizados no processo de treinamento, indicando que o modelo adquiriu capacidade para generalizar o aprendizado para dados inéditos.
+Este script irá calcular o erro absoluto médio entre as predições e as médias de votos corretas para cada filme do conjunto de testes. Na nossa execução, este valor ficou em aproximadamente 0.8 (os votos são de 0 a 10). Lembre que estes dados não foram utilizados no processo de treinamento, indicando que o modelo adquiriu capacidade para generalizar o aprendizado para dados inéditos.
 
 \section{Facilidades e Dificuldades Encontradas}
 \subsection{Problema das passadas}
