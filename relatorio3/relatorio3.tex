@@ -71,6 +71,7 @@ O diretório \texttt{Interpretador} é o principal do projeto. Contém
 
 \begin{enumerate}
 	\item arquivos com extensão ".cml", que são exemplos para teste, conforme descrito na seção \ref{Exemplos}
+	\item arquivos com extensão ".csv" e ".model", usados/criados pelos exemplos de teste
 	\item um \textit{script} chamado \texttt{cml} para facilitar o uso do interpretador, conforme descrito no Manual (seção \ref{Man})
 	\item \texttt{CML.cm}, responsável pela compilação do nosso código
 	\item \texttt{CML.lex}, o analisador léxico
@@ -124,13 +125,18 @@ A função mais importante de \texttt{Sort} é a \texttt{commonSort}, que extrai
 
 \item \texttt{GlobalTypeEnv}: Define o \textit{environment} de tipos global, que contém os tipos de todas as variáveis declaradas. É utilizada para a verificação de tipos, por exemplo em \texttt{x = 42;}, quando se verifica que o tipo de \texttt{x} é, de fato, \texttt{int}.
 \end{itemize}
+\item \texttt{LearningLib}, diretório que contém a biblioteca de Aprendizado de Máquina utilizada pela linguagem. Esta biblioteca implementa todas as funções predefinidas relacionadas com modelos de aprendizado e manipulação de conjuntos de dados. A interface é exportada pelo arquivo learning.sml, e a compilação é feita por \texttt{LearningLib.cm}. Ele contém os seguintes subdiretórios:
+
+\begin{itemize} \item \texttt{dataset}, diretório que contém a implementação das funções utilizadas para ler, salvar, e manipular conjuntos de dados. São elas \texttt{columns}, \texttt{remove\_columns}, \texttt{rows}, \texttt{num\_rows}, \texttt{load\_data}, e \texttt{save\_data}. Este diretório contém também a implementação de diversas funções utilizadas internamente pela biblioteca de aprendizado.
+
+\item \texttt{models}, o qual contém a implementação dos modelos de aprendizado: \textit{Perceptron}, \textit{Pocket-Perceptron}, \textit{Regressão Linear} e \textit{Regressão Logística}. Para cada um deles, foram implementadas funções para treinamento e predição, além de leitura e gravação em arquivo dos parâmetros e outras informações necessárias para a reconstrução destes modelos. Neste diretório também foram implementadas funcionalidades para pré-processamento e formatação dos conjuntos de dados, de forma a satisfazer requisitos de entrada para os algoritmos de treinamento. Estas funcionalidades estão implementadas no arquivo \texttt{preprocesss\_dataset.sml}. Como exemplos destas funcionalidades, é necessário normalizar os valores de atributos numéricos dos conjuntos de dados utiliza a média e o desvio padrão destes atributos, além disso, atributos categóricos precisam ser codificados como vetores \textit{one-hot}.
+
+\item \texttt{testesDeMachineLearning}, que contém testes para a biblioteca de Machine Learning independentes do interpretador. Estes testes podem ser ignorados para fins de correção.
+\end{itemize}
+
+\item Makefile, para que se possa dar "make clean" e limpar os arquivos gerados pelo Compilation Manager. É usado pelo \textit{script} cml.
 \end{enumerate}
 
-O diretório \texttt{Interpretador/LearningLib} contém a biblioteca de Aprendizado de Máquina utilizada pela linguagem. Esta biblioteca implementa todas as funções predefinidas relacionadas com modelos de aprendizado e manipulação de conjuntos de dados.
-
-O diretório \texttt{Interpretador/LearningLib/dataset} contém a implementação das funções utilizadas para ler, salvar, e manipular conjuntos de dados. São elas \texttt{columns}, \texttt{remove\_columns}, \texttt{rows}, \texttt{num\_rows}, \texttt{load\_data}, e \texttt{save\_data}. Este diretório contém também a implementação de diversas funções utilizadas internamente pela biblioteca de aprendizado.
-
-O diretório \texttt{Interpretador/LearningLib/models} contém a implementação dos modelos de aprendizado: \textit{Perceptron}, \textit{Pocket-Perceptron}, \textit{Regressão Linear} e \textit{Regressão Logística}. Para cada um deles, foram implementadas funções para treinamento e predição, além de leitura e gravação em arquivo dos parâmetros e outras informações necessárias para a reconstrução destes modelos. Neste diretório também foram implementadas funcionalidades para pré-processamento e formatação dos conjuntos de dados, de forma a satisfazer requisitos de entrada para os algoritmos de treinamento. Estas funcionalidades estão implementadas no arquivo \texttt{Interpretador/LearningLib/models/preprocesss\_dataset.sml}. Como exemplos destas funcionalidades, é necessário normalizar os valores de atributos numéricos dos conjuntos de dados utiliza a média e o desvio padrão destes atributos, além disso, atributos categóricos precisam ser codificados como vetores \textit{one-hot}.
 
 
 \section{Funcionamento}
@@ -167,7 +173,7 @@ CML.parse "<CAMINHO PARA O FONTE>"
 
 \section{Exemplos}\label{Exemplos}
 
-Nesta sessão apresentaremos um conjunto de exemplos de uso da linguagem, com o objetivo de demonstrar o funcionamento das funcionalidades gerais da linguagem e dos algoritmos de Machine Learning.
+Nesta seção apresentaremos um conjunto de exemplos de uso da linguagem, com o objetivo de demonstrar o funcionamento das funcionalidades gerais da linguagem e dos algoritmos de Machine Learning.
 
 \subsection{Exemplos de Uso da Linguagem}
 
