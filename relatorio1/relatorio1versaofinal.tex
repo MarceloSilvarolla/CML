@@ -1,0 +1,315 @@
+\documentclass[12pt]{article}
+%\usepackage[margin=1in]{geometry}% Change the margins here if you wish.
+%\setlength{\parindent}{0pt} % This is the set the indent length for new paragraphs, change if you want.
+%\setlength{\parskip}{5pt} % This sets the distance between paragraphs, which will be used anytime you have a blank line in your LaTeX code.
+%\pagenumbering{gobble}% This means the page will not be numbered. You can comment it out if you like page numbers.
+
+%------------------------------------
+
+\usepackage{xcolor}
+\usepackage{fancyvrb}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+
+% These packages allow the most of the common "mathly things"
+\usepackage{amsmath,amsthm,amssymb}
+
+% This package allows you to add images.
+\usepackage{graphicx}
+\usepackage{float}
+
+\newcommand{\blu}{\textcolor{blue}}
+\newcommand{\red}{\textcolor{red}}
+
+% Should you need any additional packages, you can load them here. If you've looked up something (like on DeTeXify), it should specify if you need a special package.  Just copy and paste what is below, and put the package name in the { }.  
+\usepackage{wasysym} %this lets me make smiley faces :-)
+
+\title{CML - Uma Linguagem para {\it Machine Learning} \\ \Large Relatório 1 \blu{versão final} - Trabalho de Conceitos de Linguagem de Programação}
+
+\author{Caio Lopes, Leonardo Blanger, Marcelo Silvarolla}
+
+\date{11 de abril de 2018}
+
+\begin{document}
+\maketitle
+\section{Prefácio}
+\blu{Este é o relatório das fases 1 e 2 modificado de acordo com as alterações da linguagem feitas nas fases 3, 4 e 5. O que foi acrescentado está em azul. O que foi removido está em vermelho.}
+
+\section{Requisitos do Domínio}
+
+A linguagem a ser implementada tem como objetivo facilitar a utilização de técnicas tradicionais de Aprendizado de Máquina. Este domínio de aplicação vem recebendo crescente visibilidade nos últimos anos devido a diversos fatores. Podemos citar como principais motivos o aumento na produção de dados digitais, devido ao uso cada vez maior de soluções computacionais para diversas tarefas, tanto pessoais, como científicas e da indústria, além do surgimento e aprimoramento de algoritmos capazes de extrair informações úteis a partir destas grandes massas de dados, e o aumento da capacidade computacional, que permite a utilização destes algoritmos em uma escala prática.
+
+Atualmente, projetos de software que realizem Aprendizado de Máquina geralmente utilizam linguagens de propósito geral, como {\it Python}, acrescidas de bibliotecas que agilizem tarefas específicas relacionadas a manipulação e processamento de dados.
+
+Nesta perspectiva, este trabalho tem como objetivo o projeto e implementação de uma linguagem com funcionalidades próprias para as tarefas mais fundamentais de Aprendizado de Máquina. Esta linguagem deve permitir a manipulação de dados e fornecer comandos diretos para o treinamento e uso de algoritmos tradicionais de aprendizado.
+
+De forma mais específica, a linguagem deverá prover comandos para leitura, gravação e manipulação de dados, de forma a criar uma interface amigável para o uso de {\it datasets} armazenados em planilhas no formato {\tt csv}. A linguagem deve permitir também um tratamento individual aos dados destes {\it datasets}, como por exemplo: separação de exemplos dentre conjunto de treinamento e de testes, separação dos atributos entre {\it features} e {\it labels}, conversão entre atributos categóricos e numéricos e normalização de valores.\footnote{\blu{As conversões e normalizações serão feitas de modo implícito pelos próprios algoritmos de aprendizado.}}
+
+Além da manipulação de {\it datasets}, a linguagem deve prover também funções predefinidas associadas a implementações dos algoritmos mais tradicionais da área de Aprendizado de Máquina, tais como {\it Perceptron}, {\it Pocket-Perceptron}, Regressão Linear, Regressão Logística e Árvores de Decisão. Com estas funcionalidades, a linguagem busca tornar mais ágil e amigável o treinamento de modelos preditivos utilizando {\it datasets} do usuário.
+
+Além do treinamento, a linguagem deve permitir o armazenamento e carregamento destes modelos previamente treinados, através de arquivos contendo informações sobre a estrutura dos modelos e os parâmetros resultantes do treinamento, para realização de inferência em dados inéditos de forma eficiente.
+
+\subsection{Justificativas}
+
+Dentre as motivações para o projeto desta linguagem, podemos citar a possibilidade de treinamento e utilização de algoritmos de aprendizado sem a necessidade de grande conhecimento técnico, devido ao encapsulamento do funcionamento interno destes algoritmos através das funções predefinidas da linguagem. Além disso, podemos citar também a busca pela facilidade e maior rapidez de implementação, além do risco menor de {\it bugs}. 
+
+Com estas vantagens, seria possível a realização mais ágil de testes rápidos e esboços de sistemas de predição baseados nestes algoritmos, antes de uma implementação definitiva em linguagens e bibliotecas mais eficientes.
+
+\subsection{Exemplo}
+
+Abaixo é mostrado um esboço da utilização da linguagem, contendo os tipos {\tt dataset} e {\tt model}, que representam o conjunto de dados e o modelo preditivo a ser treinado sobre estes dados, respectivamente. Também são mostradas funções predefinidas para leitura e gravação de {\it datasets}, manipulação dos atributos destes {\it datasets}, treinamento de um modelo preditivo do tipo {\it Regressão Logística} e sua utilização para inferência em outros dados de entrada, além de leitura e gravação dos parâmetros deste modelo. Este exemplo corresponde ao treinamento de um modelo para predição de probabilidade de fraude em transações de cartões de crédito, utilizando um {\it dataset} público de transações\footnote{{\it Dataset} disponível em \url{https://www.kaggle.com/mlg-ulb/creditcardfraud}}.
+
+\begin{verbatim}
+dataset D = read_data(``creditcard.csv'');
+D = categorical_to_binary(D, ``Class'', {``0'', ``1''})
+dataset X = remove_columns(D, ``Class'');
+dataset y = columns(D, ``Class'');
+model M = logistic_regression(X, y, 10000);
+...
+dataset predictions = predict(M, x_test);
+save_data(predictions, ``predictions.csv'');
+...
+save_model(M, ``model_name'');
+M = read_model(``model_name'');
+\end{verbatim}
+
+\blu{A sintaxe final da linguagem possui algumas divergências em relação à que foi apresentada no exemplo anterior. A função \texttt{read\_data} se transformou em \texttt{load\_data}, e recebe como parâmetros o nome do aquivo e o caractere separador do \texttt{csv}. Além disso, a função \texttt{categorical\_to\_binary} não existe na linguagem, pois a tarefa de converter atributos categóricos para numéricos e binários é realizada internamente no treinamento dos modelos e predição de dados}.
+
+Os dados do dataset estão armazenados na planilha {\tt creditcard.csv}, que é lida e armazenada no {\it dataset} {\tt D}. Todos os atributos são numéricos, exceto a classe das transações, que assumem as {\it strings} {\tt ``0''} ou {\tt ``1''} quando a respectiva transação for legítima ou fraudulenta, respectivamente. A segunda linha converte os elementos do conjunto \{{\tt ``0''}, {\tt ``1''}\} no atributo {\tt Class}, para valores numéricos 0 ou 1. A terceira e quarta linhas separaram as {\it features} das {\it labels}, enquanto a quinta linha treina um modelo de regressão logística utilizando estes dados por 10000 iterações. Em seguida, é utilizado este modelo treinado para realizar predições em um dataset de dados inéditos {\tt x\_test}, que são salvas na planilha {\tt predictions.csv}. Por fim, o modelo (sua estrutura e parâmetros) é salvo e lido do arquivo {\tt model\_name}.
+
+\subsection{Funções predefinidas}
+
+A linguagem fornecerá as seguintes funções predefinidas para o programador:
+\\
+\\
+\texttt{// lê arquivo csv especificado por path e devolve um dataset, com as entradas no arquivo separadas pelo caractere separator
+\\
+dataset load\_data(string path, \blu{char separator});
+\\
+\\ 
+// guarda o dataset no caminho especificado por path, com as entradas no arquivo separadas pelo caractere separator
+\\
+void save\_data(dataset d, string path, char separator);
+\\
+\\
+// devolve o mesmo dataset mas com apenas as colunas especificadas
+\\ 
+dataset cols(dataset d, string[] attributes);
+\\
+\\
+// devolve o mesmo dataset sem as colunas especificadas
+\\
+dataset remove\_cols(dataset d, string[] attributes);
+\\
+\\
+// devolve o mesmo dataset com exemplos de índice em [begin,begin+num\_samples)
+\\
+dataset rows(dataset d, int begin, int end);
+\\
+\\
+// devolve o número de linhas (exemplos) do dataset
+\\
+int num\_rows(dataset d);
+\\
+\\
+// estas funções devolvem modelos baseados nos datasets dados
+\\
+model perceptron(dataset X, dataset y, int max\_iter);
+\\ 
+\\
+model pocket\_perceptron(dataset X, dataset y, int max\_iter);
+\\
+\\
+model linear\_regression(dataset X, dataset y, \blu{real learning\_rate, int batch\_size, int num\_epochs}, int max\_iter);
+\\
+\\
+model logistic\_regression(dataset X, dataset y, \blu{string feature\_of\_interest, real learning\_rate, int batch\_size, int num\_epochs}, int max\_iter);
+\\
+\\
+// calcula os as saídas y correspondentes a X e devolve y 
+\\
+dataset predict(\blu{dataset X, model M});
+\\
+\\
+// carrrega modelo armazenado no arquivo especificado pelo caminho path
+\\
+model load\_model(string path);
+\\
+\\
+// armazena modelo M no caminho path
+\\
+void save\_model(model M, string path);
+}
+
+\color{black}
+\section{Levantamento dos Conceitos}
+
+\subsection{Tipos}
+
+Os tipos primitivos da linguagem consistem em inteiro ({\tt int}), valor real de ponto flutuante ({\tt real}), caractere ({\tt char}), booleano ({\tt bool}), além do tipo que representa um modelo preditivo treinado ({\tt model}). O tipo {\tt model} está enquadrado como primitivo devido ao fato de não  haver o interesse atual em permitir acesso aos parâmetros individuais do modelo no nível da linguagem. A palavra reservada {\tt void} poderá ser usada apenas como tipo de retorno de funções, indicando que a função não retorna valor.
+
+Além dos tipos primitivos, existem três tipos compostos na linguagem. Os vetores, que são sequências de qualquer outro tipo, indexadas a partir de zero, o tipo {\tt string}, que representa sequências de caracteres, e o tipo {\tt dataset}, que representa um conjunto de dados. valores do tipo {\tt dataset} são constituídas de uma sequência de exemplos, sendo que os exemplos, por sua vez, são subdivididos em atributos. Será possível acessar intervalos de exemplos dentro do {\it dataset}, e haverá funções predefinidas na linguagem para acessar atributos específicos de todos os exemplos.
+
+Não será possível para o programador criar novos tipos na linguagem.
+
+\subsection{Expressões e Comandos}
+
+A linguagem possuirá as expressões aritméticas e lógicas fundamentais, como qualquer linguagem de propósito geral. \red{Também terá expressões da forma 
+{\tt d[2:10]} para especificar {\tt dataset}s menores, no caso apenas com os exemplos de índice entre 2 e 10.}
+
+\blu{Operações do tipo \texttt{d[2:10]}, como no exemplo acima, não existem na versão final da linguagem. Sub-datasets podem ser obtidos através da função predefinida \texttt{rows}.}
+
+Além disto, a linguagem possuirá comandos para atribuição, desvio condicional ({\tt if/else}) e laço de repetição ({\tt while}).
+
+Em detalhes, teremos as expressões e comandos a seguir, onde, quando dizemos que algo tem um certo tipo, estamos dizendo que esse algo é uma expressão cujo valor calculado tem o tal tipo.
+
+Expressões:
+
+\begin{itemize}
+\item Literais
+	\begin{itemize}
+    \item 5 tem tipo {\tt int}
+    \item 5.0 tem tipo {\tt real}
+    \item 'a' tem tipo {\tt char}
+     \item "Caio" tem tipo {\tt string}
+    \item true tem tipo {\tt bool}
+	\end{itemize}
+\item Variáveis
+	\begin{itemize}
+    \item x tem seu tipo determinado pela declaração visível segundo o escopo, conforme definido na seção seguinte
+   	\end{itemize}
+\item Agregações
+	\begin{itemize}
+    \item {\tt\{}$e_1, e_2, \ldots, e_n${\tt\}} tem tipo vetorDe($t$)"
+    se cada $e_i$ tem tipo $t$. \blu{Por exemplo, \{"salario", "idade", "credito"\} tem tipo "vetor de {\tt string}'s", pois "salario", "idade" e "credito" têm tipo {\tt string}. Por outro lado, \{12, 5\} têm tipo "vetor de {\tt int}'s". Assim, se o programador declarar \texttt{int[] v = \{12, 5\};}, o teste \texttt{v[1] == 5} resultará no valor \texttt{true}.}
+    \end{itemize}
+\item Aplicações de funções
+	\begin{itemize}
+    \item {\tt f($e_1, e_2, \ldots, e_n$)} tem tipo {\tt t} se 
+    {\tt f} é uma função de $s_1\times s_2\times\ldots\times s_n$ para
+    $t$ e cada $e_i$ tem tipo $s_i$. Note que {\tt f} precisa estar definida
+    no programa para que a aplicação seja válida.
+    \item Analogamente para as funcões predefinidas.
+    \end{itemize}
+\item Operações aritméticas
+	\begin{itemize}
+    \item {\tt $e_1$ + $e_2$} tem tipo {\tt int} se cada $e_i$ tem tipo
+    {\tt int} e o ``{\tt +}" está na raiz da {\it parse tree} da expressão
+    \item {\tt $e_1$ + $e_2$} tem tipo {\tt real} se cada $e_i$ tem tipo
+    {\tt int} ou {\tt real}, pelo menos um dos $e_i$ tem tipo {\tt real}
+    e o ``{\tt +}" está na raiz da {\it parse tree} da expressão
+    \item Analogamente para {\tt -, *} e {\tt /}
+    \end{itemize}
+\item Operações lógicas
+	\begin{itemize}
+    \item {\tt $e_1$ < $e_2$} tem tipo {\tt bool} se cada $e_i$ tem tipo
+    {\tt int} ou {\tt float} e o ``{\tt <}" está na raiz da {\it parse tree} da
+    expressão
+    \item Analogamente para {\tt >, <=, >=, ==, !=}
+    \item {\tt $e_1$ \&\& $e_2$} tem tipo {\tt bool} se cada $e_i$ tem tipo
+    {\tt bool} e o ``{\tt \&\&}" está na raiz da {\it parse tree} da expressão
+    \item Analogamente para {\tt ||}
+    \item {\tt !$e_1$} tem tipo {\tt bool} se $e_1$ tem tipo {\tt bool}
+    \end{itemize}
+\item Operações com vetores
+	\begin{itemize}
+    \item {\tt v[$e_1$]} tem tipo $t$ se $v$ tem tipo ``vetor de $t$'s"
+    e $e_1$ tem tipo {\tt int}
+    \end{itemize}
+\item \red{Operações com {\it datasets}
+	\begin{itemize}
+    \item {\tt d[$e_1$:$e_2$]} tem tipo {\tt dataset} se
+    $d$ tem tipo {\tt dataset}
+    e os $e_i$ têm tipo {\tt int}
+    \end{itemize}}
+\item Atribuições
+	\begin{itemize}
+    \item {\tt x = $e_1$} tem tipo $t$ se 
+    {\tt x} é uma variável de tipo $t$,
+    $e_1$ tem tipo $t$ e
+    o ``{\tt =}" está na raiz da {\it parse tree} da expressão
+    \item {\tt v[$e_1$] = $e_2$} tem tipo $t$ se 
+    $e_1$ tem tipo {\tt int},
+    $e_2$ tem tipo $t$, e
+    {\tt v} tem tipo ``vetor de {\tt t}'s"
+    
+    \end{itemize}
+\end{itemize}
+
+Comandos:
+
+\begin{itemize}
+\item Comando-expressão
+	\begin{itemize}
+	\item {\tt $e_1$;} é comando se $e_1$ é expressão
+    \item {\tt ;} é comando
+	\end{itemize}
+\item Desvio condicional
+	\begin{itemize}
+	\item {\tt if($e_1$) $c_1$} é comando se $e_1$ tem tipo {\tt bool} e 
+    $c_1$ é comando composto
+    \item {\tt if($e_1$) $c_1$ else $c_2$} é comando se 
+    $e_1$ tem tipo {\tt bool} e
+    $c_1$ e $c_2$ são comandos compostos
+	\end{itemize}
+\item Laço
+	\begin{itemize}
+    \item {\tt while($e_1$) $c_1$} é comando se
+    $e_1$ tem tipo {\tt bool} e
+    $c_1$ é comando composto
+    \end{itemize}
+\item Comando composto
+	\begin{itemize}
+    \item {\tt\{$c_1$ $c_2$ $\ldots$ $c_n$\}} é comando se os $c_i$ forem comandos
+    ou declarações (onde $n\geq \blu{1}$)
+    \end{itemize}
+\end{itemize}
+
+\subsection{Vinculação e Escopo}
+
+A vinculação das variáveis será feita de modo explícito. Toda variável deve ser declarada no código precedida do um identificador do tipo, como por exemplo:
+
+\begin{verbatim}
+dataset D = read_data(`data.csv');
+\end{verbatim}
+
+Quanto ao tempo de vinculação, as variáveis serão vinculadas de forma estática. Ou seja, antes do tempo de execução do programa, permancendo inalteradas durante a execução.
+
+Como não é permitida a criação de novos tipos na linguagem, a vinculação de tipos a suas palavras reservadas já está embutida no processador da linguagem, e portanto, também ocorre de forma estática.
+
+O escopo será estático: uma variável estará visível num bloco se ela for local àquele bloco ou a algum bloco que o contenha.\footnote{Note que a contenção é uma relação transitiva: se o bloco {\it b1} contém o bloco {\it b2}, e o bloco {\it b2} contém o bloco {\it b3}, então {\it b1} contém {\it b3}.} A exceção ocorre quando duas variáveis de mesmo nome estão no bloco ou em algum bloco que o contém: neste caso, a mais interior será visível e a mais exterior, não.
+
+\subsection{Sistema de Tipos}
+O sistema de tipos será monomórfico: variáveis, constantes e parâmetros de funções serão sempre declaradas com um único tipo. Haverá sobrecarga dos operadores de soma, subtração, multiplicação e divisão,  que poderão operar sobre {\tt int}s e {\tt real}s. A sobrecarga será independente de contexto: olhando-se apenas para os operandos, se deduzirá o operador a ser utilizado.
+
+
+\subsection{Verificação de Tipos}
+Na verificação de tipos, será feita a coerção de {\tt int} para {\tt real}, tanto em expressões aritméticas como em declarações da forma {\tt real x = 1;}. Como o programador não definirá seus próprios tipos, a equivalência de tipos se reduzirá à equivalência nominal: dois tipos são equivalentes se, e somente se, são iguais. Finalmente, sendo os tipos explicitados no código, não será feita qualquer inferência de tipos.
+
+\subsection{Avaliação de Expressões}
+Parênteses definirão parcialmente a ordem de avaliação de expressões. Caso ainda haja ambiguidade, a precedência de operadores a seguir será utilizada:
+
+\begin{enumerate}
+\item {\tt !}
+\item {\tt *, /}
+\item {\tt +, -}
+\item {\tt <, <=, >, >=}
+\item {\tt ==, !=}
+\item {\tt \&\&}
+\item {\tt ||}
+\item {\tt =}
+
+No caso de operadores com empate de precedência, a execução das operações será realizada da esquerda para a direita, com exceção da atribuição ('=') e da negação unária ('!'), que terão associatividade à direita.
+
+\end{enumerate}
+
+\subsection{Abstrações}
+A linguagem não terá abstrações de tipo, já que o programador não poderá definir seus próprios tipos.
+
+Haverá abstração de funções e procedimentos sob o rótulo ``função", assim como em {\it C}. Isto é, procedimentos serão declarados como funções que retornam {\tt void}.
+
+A passagem de parãmetros será exclusivamente pelo mecanismo de cópia. Há aqui uma sutileza: em {\it C}, vetores decaem para ponteiros ao serem passados como argumento e, portanto, são passados por referência; em {\it CML} não há ponteiros e os vetores são copiados.
+
+Parametrização de tipos não será possível na linguagem e os argumentos das funções serão avaliados {\it a priori}.
+
+\end{document}
