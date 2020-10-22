@@ -7,5 +7,6 @@ int main() {
      x = x + 2;
      return 88282;
    }
+
 return 42;
 }
