@@ -1,5 +1,5 @@
 Library
-  structure CML 
+  structure CML
 is
   datatypes.sml
   CML.lex:MLLex
